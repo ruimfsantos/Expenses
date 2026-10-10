@@ -2,7 +2,7 @@
   "name": "Registo de Despesas",
   "short_name": "Despesas",
   "description": "Sistema de registo e gestão de despesas com anexos, relatórios e exportação PDF.",
-  "start_url": "./Software-Register-Expenses_v6.html",
+  "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",
