@@ -1,7 +1,7 @@
 // Service Worker — permite instalação como PWA e funcionamento offline básico.
 const CACHE_NAME = 'despesas-v1';
 const URLS_TO_CACHE = [
-    './Software-Register-Expenses_v6.html',
+    './index.html',
     './manifest.json'
 ];
 
