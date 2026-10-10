@@ -1,0 +1,2895 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Sistema de Registro de Despesas</title>
+    <meta name="theme-color" content="#1a3a5c">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Despesas">
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.30/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f7fc; padding: 20px; color: #333; }
+        .container { max-width: 1400px; margin: 0 auto; background: #fff; padding: 25px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+        h1 { color: #1a3a5c; border-left: 5px solid #2a7de1; padding-left: 15px; margin-bottom: 25px; font-weight: 300; }
+
+        .docs-bar {
+            display: flex; flex-wrap: wrap; align-items: center; gap: 10px;
+            background: linear-gradient(135deg, #1a3a5c 0%, #2a7de1 100%);
+            padding: 12px 18px; border-radius: 10px; margin-bottom: 20px;
+            box-shadow: 0 4px 15px rgba(26,58,92,0.15);
+        }
+        .docs-bar-label { color: white; font-weight: 700; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; gap: 8px; white-space: nowrap; }
+        .docs-selector { flex: 1; min-width: 200px; padding: 8px 12px; border: 2px solid rgba(255,255,255,0.3); border-radius: 6px; background: rgba(255,255,255,0.95); font-size: 0.95rem; font-weight: 600; color: #1a3a5c; cursor: pointer; transition: 0.2s; }
+        .docs-selector:hover, .docs-selector:focus { outline: none; border-color: white; background: white; }
+        .docs-btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border: 1px solid rgba(255,255,255,0.3); border-radius: 6px; background: rgba(255,255,255,0.15); color: white; font-size: 0.8rem; font-weight: 600; cursor: pointer; transition: 0.2s; white-space: nowrap; }
+        .docs-btn:hover { background: rgba(255,255,255,0.3); border-color: white; }
+        .docs-btn.primary { background: #27ae60; border-color: #27ae60; }
+        .docs-btn.primary:hover { background: #1e8e4e; border-color: #1e8e4e; }
+        .docs-btn.danger { background: #e74c3c; border-color: #e74c3c; }
+        .docs-btn.danger:hover { background: #c0392b; border-color: #c0392b; }
+        .docs-btn.file { background: #8e44ad; border-color: #8e44ad; }
+        .docs-btn.file:hover { background: #732d91; border-color: #732d91; }
+        .docs-btn.file-save { background: #16a085; border-color: #16a085; }
+        .docs-btn.file-save:hover { background: #117a65; border-color: #117a65; }
+
+        .company-panel { background: #f8fafc; border-radius: 10px; margin-bottom: 25px; border: 1px solid #e0e8f0; overflow: hidden; }
+        .company-panel-body { padding: 0 20px 20px 20px; transition: all 0.3s ease; max-height: 800px; overflow: hidden; }
+        .company-panel-body.hidden { max-height: 0; padding: 0 20px; }
+
+        .company-grid { display: grid; grid-template-columns: repeat(10, 1fr); gap: 15px 20px; padding-top: 10px; }
+        .company-item { display: flex; flex-direction: column; }
+
+        .company-item.company-item-name { grid-column: 1 / span 3; grid-row: 1; }
+        .company-item.company-item-company { grid-column: 1 / span 3; grid-row: 2; }
+        .company-item.company-logo { grid-column: 8 / span 3; grid-row: 1 / span 2; display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-start; }
+        .company-item.company-item-address { grid-column: 4 / span 4; grid-row: 1; }
+        .company-item.company-item-nif { grid-column: 4 / span 2; grid-row: 2; }
+        .company-item.company-item-contact { grid-column: 6 / span 2; grid-row: 2; }
+
+        .company-item label { font-size: 0.75rem; font-weight: 600; color: #1a3a5c; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .company-item input { padding: 8px 10px; border: 1px solid #cddae9; border-radius: 6px; background: white; font-size: 0.9rem; width: 100%; }
+        .company-item input:focus { outline: 2px solid #2a7de1; border-color: transparent; }
+
+        .company-logo .logo-preview { width: 80px; height: 80px; border: 2px dashed #b8c9dd; border-radius: 8px; display: flex; align-items: center; justify-content: center; overflow: hidden; background: white; position: relative; }
+        .company-logo .logo-preview img { max-width: 100%; max-height: 100%; object-fit: contain; }
+        .company-logo .logo-preview .placeholder { color: #b8c9dd; font-size: 0.75rem; text-align: center; padding: 5px; }
+        .company-logo .logo-actions { display: flex; flex-direction: row; gap: 5px; margin-top: 8px; flex-wrap: wrap; }
+        .company-logo .logo-actions button { padding: 6px 10px; border: none; border-radius: 6px; font-size: 0.7rem; cursor: pointer; font-weight: 600; transition: 0.2s; white-space: nowrap; }
+        .company-logo .logo-actions .btn-upload { background: #2a7de1; color: white; }
+        .company-logo .logo-actions .btn-upload:hover { background: #1a5fb0; }
+        .company-logo .logo-actions .btn-remove-logo { background: #e74c3c; color: white; }
+        .company-logo .logo-actions .btn-remove-logo:hover { background: #c0392b; }
+        .file-input-hidden { display: none; }
+
+        .reference-header-wrapper { background: #f8fafc; border-radius: 10px; margin-bottom: 25px; border: 1px solid #e0e8f0; overflow: hidden; }
+        .reference-header-title { background: #e8eef6; color: #1a3a5c; font-size: 0.85rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; padding: 10px 20px; border-bottom: 1px solid #e0e8f0; display: flex; align-items: center; justify-content: space-between; }
+        .reference-header-title > span { display: flex; align-items: center; gap: 8px; }
+
+        .header-toggle-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 6px 16px; border: 1px solid #cddae9; border-radius: 6px; background: white; color: #1a3a5c; font-size: 0.75rem; font-weight: 600; cursor: pointer; transition: 0.2s; text-transform: none; letter-spacing: normal; min-width: 110px; height: 32px; white-space: nowrap; }
+        .header-toggle-btn:hover { background: #eef4fa; border-color: #2a7de1; color: #2a7de1; }
+
+        .reference-header-body { transition: all 0.3s ease; max-height: 500px; overflow: hidden; }
+        .reference-header-body.hidden { max-height: 0; }
+
+        .insert-expense-wrapper { background: #f8fafc; border-radius: 10px; margin-bottom: 25px; border: 1px solid #e0e8f0; overflow: hidden; }
+        .insert-expense-wrapper .add-row { margin: 0; border: none; border-radius: 0; background: #f8fafc; }
+
+        #pendingAttachments { display: none; flex-wrap: wrap; gap: 8px; padding: 0 15px 15px 15px; }
+        #pendingAttachments.has-items { display: flex; }
+        #pendingAttachments .pending-tag { background: #ede4f5; color: #6b3a8e; padding: 5px 10px; border-radius: 14px; font-size: 0.75rem; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; border: 1px solid #d5c2e5; }
+        #pendingAttachments .pending-tag i.fa-file { color: #8e44ad; }
+        #pendingAttachments .pending-tag .remove-pending { cursor: pointer; color: #c0392b; font-size: 0.85rem; margin-left: 2px; }
+        #pendingAttachments .pending-tag .remove-pending:hover { color: #7f1d1d; }
+
+        .expense-header { display: grid; grid-template-columns: repeat(12, 1fr); grid-template-rows: auto auto; gap: 15px 20px; background: #f8fafc; padding: 20px; border: none; margin-bottom: 0; }
+        .expense-header .header-item { display: flex; flex-direction: column; }
+        .expense-header .header-item label { font-size: 0.8rem; font-weight: 600; color: #1a3a5c; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .expense-header .header-item input { padding: 8px 10px; border: 1px solid #cddae9; border-radius: 6px; background: white; font-size: 0.95rem; }
+        .expense-header .header-item input:focus { outline: 2px solid #2a7de1; border-color: transparent; }
+        .expense-header .header-item textarea { padding: 8px 10px; border: 1px solid #cddae9; border-radius: 6px; background: white; font-size: 0.95rem; font-family: inherit; resize: vertical; min-height: 100px; width: 100%; height: 100%; }
+        .expense-header .header-item textarea:focus { outline: 2px solid #2a7de1; border-color: transparent; }
+
+        .expense-header .header-item-month { grid-column: 1 / span 2; grid-row: 1; }
+        .expense-header .header-item-reference { grid-column: 5 / span 2; grid-row: 1; }
+        .expense-header .header-item-resume { grid-column: 7 / span 4; grid-row: 1 / span 2; }
+        .expense-header .header-total { grid-column: 11 / span 2; grid-row: 1; }
+        .expense-header .header-item-from { grid-column: 1 / span 2; grid-row: 2; }
+        .expense-header .header-item-to { grid-column: 3 / span 2; grid-row: 2; }
+
+        .expense-header .header-total { font-size: 1.5rem; font-weight: 700; color: #0f3b6a; display: flex; align-items: center; justify-content: flex-end; gap: 5px; text-align: right; }
+        .expense-header .header-total span:first-child { font-size: 1rem; font-weight: 400; color: #555; }
+
+        .add-row { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px 12px; background: #f8fafc; padding: 15px; border-radius: 10px; margin: 15px 0 20px; border: 1px dashed #b8c9dd; }
+        .add-row .field-group { display: flex; flex-direction: column; flex: 1 0 130px; min-width: 120px; justify-content: flex-end; }
+        .add-row .field-group label { font-size: 0.7rem; font-weight: 600; color: #555; margin-bottom: 3px; text-transform: uppercase; letter-spacing: 0.3px; }
+        .add-row .field-group input, .add-row .field-group select { padding: 8px 10px; border: 1px solid #cddae9; border-radius: 6px; background: white; font-size: 0.9rem; width: 100%; height: 38px; }
+        .add-row .field-group .currency-group { display: flex; gap: 5px; }
+        .add-row .field-group .currency-group input { flex: 2; }
+        .add-row .field-group .currency-group select { flex: 1; }
+        .add-row .add-btn-group { display: flex; gap: 8px; align-items: flex-end; padding-bottom: 0; height: 100%; }
+        .add-row .add-btn-group button { padding: 8px 22px; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; transition: 0.2s; font-size: 0.9rem; height: 38px; margin-top: auto; }
+        .add-row .add-btn-group .btn-add { background: #2a7de1; color: white; }
+        .add-row .add-btn-group .btn-add:hover { background: #1a5fb0; }
+        .add-row .add-btn-group .btn-clear-all { background: #e74c3c; color: white; }
+        .add-row .add-btn-group .btn-clear-all:hover { background: #c0392b; }
+
+        .action-bar { display: flex; flex-wrap: wrap; gap: 12px; margin: 0 0 25px 0; }
+        .action-bar button { padding: 10px 20px; border: none; border-radius: 8px; font-weight: 600; background: #eef4fa; color: #1a3a5c; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s; font-size: 0.9rem; border: 1px solid transparent; min-width: 180px; height: 44px; white-space: nowrap; }
+        .action-bar button:hover { background: #dce6f2; border-color: #b0c8df; }
+        .action-bar .primary { background: #1a3a5c; color: white; }
+        .action-bar .primary:hover { background: #0f2b44; }
+        .action-bar .success { background: #27ae60; color: white; }
+        .action-bar .success:hover { background: #1e8e4e; }
+        .action-bar .warning { background: #f39c12; color: white; }
+        .action-bar .warning:hover { background: #d68910; }
+        .action-bar .purple { background: #8e44ad; color: white; }
+        .action-bar .purple:hover { background: #732d91; }
+        .action-bar .save { background: #2a7de1; color: white; }
+        .action-bar .save:hover { background: #1a5fb0; }
+
+        .table-wrapper { overflow-x: auto; margin: 20px 0; border-radius: 10px; border: 1px solid #e0e8f0; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+        th { background: #1a3a5c; color: white; padding: 12px 8px; text-align: left; white-space: nowrap; }
+        table th:nth-child(5), table th:nth-child(6) { text-align: right; }
+        td { padding: 8px 8px; border-bottom: 1px solid #e0e8f0; vertical-align: middle; }
+        td.currency-cell { text-align: right; font-variant-numeric: tabular-nums; }
+        td.currency-cell-original { text-align: right; font-variant-numeric: tabular-nums; }
+        tr:hover { background: #f0f6ff; }
+        .category-badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; background: #dce6f2; color: #1a3a5c; }
+        .actions-cell { display: flex; gap: 6px; flex-wrap: wrap; }
+        .actions-cell button { background: none; border: none; cursor: pointer; font-size: 1rem; padding: 4px 6px; border-radius: 4px; transition: 0.2s; }
+        .actions-cell button:hover { background: #dce6f2; }
+        .btn-remove { color: #c0392b; }
+        .btn-attach { color: #2980b9; }
+        .btn-view { color: #27ae60; }
+        .btn-camera { color: #8e44ad; }
+        .btn-edit { color: #f39c12; }
+
+        .attachments-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+        .attachments-list .file-tag { background: #e8edf5; padding: 2px 8px; border-radius: 12px; font-size: 0.7rem; display: inline-flex; align-items: center; gap: 4px; }
+        .attachments-list .file-tag i { cursor: pointer; color: #c0392b; }
+
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 999; }
+        .modal-content { background: white; padding: 25px; border-radius: 12px; max-width: 700px; width: 90%; max-height: 80vh; overflow-y: auto; position: relative; }
+        .modal-close { position: absolute; top: 12px; right: 18px; font-size: 1.8rem; cursor: pointer; color: #888; }
+        .modal-close:hover { color: #333; }
+        .modal img, .modal iframe { max-width: 100%; border-radius: 6px; margin-top: 8px; }
+        .modal .file-item { margin: 10px 0; padding: 8px; background: #f5f7fa; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; }
+        .modal .pdf-container { width: 100%; height: 500px; border: 1px solid #ddd; border-radius: 6px; margin-top: 10px; }
+
+        .chart-container { margin-top: 30px; padding: 20px; background: #fafcff; border-radius: 12px; border: 1px solid #e0e8f0; display: none; }
+        .chart-container canvas { max-height: 280px; max-width: 100%; }
+        .chart-summary { display: flex; flex-wrap: wrap; gap: 30px; align-items: center; justify-content: center; }
+        .summary-table { font-size: 0.85rem; border-collapse: collapse; min-width: 200px; }
+        .summary-table td, .summary-table th { padding: 5px 12px; border: 1px solid #d0dae8; }
+        .summary-table th { background: #e8eef6; }
+        .summary-table th:nth-child(2), .summary-table th:nth-child(3) { text-align: right; }
+
+        #cameraContainer { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 1000; justify-content: center; align-items: center; flex-direction: column; }
+        #cameraContainer video { max-width: 90%; max-height: 70vh; border-radius: 8px; }
+        #cameraContainer .cam-controls { margin-top: 20px; display: flex; gap: 15px; }
+        #cameraContainer .cam-controls button { padding: 12px 30px; border: none; border-radius: 8px; font-weight: 600; font-size: 1rem; cursor: pointer; }
+        #cameraContainer .cam-controls .capture { background: #27ae60; color: white; }
+        #cameraContainer .cam-controls .close-cam { background: #e74c3c; color: white; }
+
+        .storage-info {
+            display: flex; align-items: center; justify-content: space-between;
+            background: #eef4fa; border: 1px solid #cddae9; border-radius: 8px;
+            padding: 8px 14px; margin-bottom: 15px; font-size: 0.75rem; color: #1a3a5c;
+        }
+        .storage-info .storage-bar {
+            flex: 1; height: 6px; background: #dce6f2; border-radius: 3px;
+            margin: 0 12px; overflow: hidden;
+        }
+        .storage-info .storage-fill {
+            height: 100%; background: #27ae60; transition: width 0.3s;
+        }
+        .storage-info .storage-fill.warning { background: #f39c12; }
+        .storage-info .storage-fill.danger { background: #e74c3c; }
+
+        #fileInfoBar { background: #eafaf1; border-color: #a9dfbf; margin-top: -8px; }
+
+        .image-editor-toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: center;
+            background: #f0f4fa;
+            padding: 10px 12px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            border: 1px solid #d0dae8;
+        }
+        .image-editor-toolbar button {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 7px 14px;
+            border: 1px solid #cddae9;
+            border-radius: 6px;
+            background: white;
+            color: #1a3a5c;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .image-editor-toolbar button:hover {
+            background: #e6eefa;
+            border-color: #2a7de1;
+            color: #2a7de1;
+        }
+        .image-editor-toolbar .toolbar-divider {
+            width: 1px;
+            height: 24px;
+            background: #cddae9;
+            margin: 0 4px;
+        }
+        .image-editor-body {
+            background: #333;
+            border-radius: 8px;
+            overflow: hidden;
+            max-height: 60vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 300px;
+        }
+        .image-editor-body img {
+            max-width: 100%;
+            max-height: 60vh;
+        }
+        .cropper-view-box,
+        .cropper-face {
+            border-radius: 0;
+        }
+        .cropper-line {
+            background-color: #2a7de1;
+        }
+        .cropper-point {
+            background-color: #2a7de1;
+            width: 8px;
+            height: 8px;
+        }
+        .cropper-modal {
+            opacity: 0.6;
+        }
+
+        @media (max-width: 1000px) {
+            .company-grid { grid-template-columns: repeat(6, 1fr); }
+            .company-item.company-item-name { grid-column: 1 / span 3; grid-row: 1; }
+            .company-item.company-item-address { grid-column: 4 / span 3; grid-row: 1; }
+            .company-item.company-item-company { grid-column: 1 / span 3; grid-row: 2; }
+            .company-item.company-item-nif { grid-column: 4 / span 3; grid-row: 2; }
+            .company-item.company-item-contact { grid-column: 1 / span 3; grid-row: 3; }
+            .company-item.company-logo { grid-column: 4 / span 3; grid-row: 3; }
+            .expense-header { grid-template-columns: repeat(6, 1fr); grid-template-rows: auto auto auto; }
+            .expense-header .header-item-month { grid-column: 1 / span 2; grid-row: 1; }
+            .expense-header .header-item-reference { grid-column: 3 / span 2; grid-row: 1; }
+            .expense-header .header-total { grid-column: 5 / span 2; grid-row: 1; }
+            .expense-header .header-item-resume { grid-column: 1 / span 6; grid-row: 2; }
+            .expense-header .header-item-from { grid-column: 1 / span 2; grid-row: 3; }
+            .expense-header .header-item-to { grid-column: 3 / span 2; grid-row: 3; }
+        }
+        @media (max-width: 700px) {
+            .docs-bar { padding: 10px; }
+            .docs-bar-label { width: 100%; }
+            .docs-selector { width: 100%; min-width: 100%; }
+            .docs-btn { flex: 1; justify-content: center; padding: 8px 10px; font-size: 0.75rem; }
+            .company-grid { grid-template-columns: 1fr; }
+            .company-item.company-item-name, .company-item.company-item-address,
+            .company-item.company-item-company, .company-item.company-item-nif,
+            .company-item.company-item-contact, .company-item.company-logo { grid-column: 1; grid-row: auto; }
+            .company-logo { flex-direction: column; align-items: flex-start; }
+            .company-logo .logo-actions { flex-direction: row; flex-wrap: wrap; }
+            .expense-header { grid-template-columns: 1fr; grid-template-rows: auto; }
+            .expense-header .header-item-month, .expense-header .header-item-reference,
+            .expense-header .header-item-resume, .expense-header .header-total,
+            .expense-header .header-item-from, .expense-header .header-item-to { grid-column: 1; grid-row: auto; }
+            .add-row { flex-direction: column; align-items: stretch; }
+            .add-row .field-group { flex: 1 1 auto; }
+            .add-row .field-group .currency-group { flex-wrap: wrap; }
+            .add-row .add-btn-group { flex-direction: column; width: 100%; }
+            .add-row .add-btn-group button { width: 100%; }
+            .action-bar button { min-width: 100%; }
+        }
+
+        /* ========== Ajustes para Android / tablets / PWA ========== */
+        body {
+            padding: max(20px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right))
+                     max(20px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left));
+        }
+
+        @media (max-width: 700px) {
+            body { padding: 8px; }
+            .container { padding: 14px; border-radius: 10px; }
+            h1 { font-size: 1.2rem; padding-left: 10px; margin-bottom: 15px; }
+
+            .table-wrapper { border: none; }
+            table thead { display: none; }
+            table, table tbody, table tr, table td { display: block; width: 100%; }
+            table tr {
+                margin-bottom: 12px;
+                background: #fff;
+                border: 1px solid #e0e8f0;
+                border-radius: 10px;
+                padding: 10px 12px;
+                box-shadow: 0 2px 6px rgba(26,58,92,0.06);
+            }
+            table td {
+                border: none;
+                padding: 4px 0;
+                text-align: left !important;
+                font-size: 0.85rem;
+            }
+            table td::before {
+                content: attr(data-label);
+                display: inline-block;
+                font-weight: 700;
+                color: #1a3a5c;
+                text-transform: uppercase;
+                font-size: 0.65rem;
+                letter-spacing: 0.5px;
+                margin-right: 8px;
+                min-width: 90px;
+            }
+
+            .action-bar button,
+            .docs-btn,
+            .add-row .add-btn-group button {
+                min-height: 44px;
+                font-size: 0.85rem;
+            }
+
+            input, select, textarea {
+                font-size: 16px !important;
+            }
+
+            .docs-bar { flex-direction: column; align-items: stretch; }
+            .docs-bar-label { width: 100%; margin-bottom: 4px; }
+
+            .actions-cell button { font-size: 1.3rem; padding: 8px 10px; }
+        }
+
+        @media (min-width: 701px) and (max-width: 1024px) {
+            .company-grid { grid-template-columns: repeat(8, 1fr); }
+            .expense-header { grid-template-columns: repeat(8, 1fr); }
+            .action-bar button { min-width: 160px; }
+        }
+
+        .pwa-mode h1 { display: none; }
+    </style>
+</head>
+<body>
+<div class="container" id="app">
+    <h1><i class="fas fa-file-invoice-dollar" style="margin-right:12px;color:#2a7de1;"></i>Registo de Despesas</h1>
+
+    <div class="docs-bar">
+        <div class="docs-bar-label"><i class="fas fa-folder-open"></i> Documento:</div>
+        <select id="docSelector" class="docs-selector"></select>
+        <button class="docs-btn primary" id="newDocBtn" title="Novo documento"><i class="fas fa-plus"></i> Novo</button>
+        <button class="docs-btn file" id="openFileBtn" title="Abrir ficheiro .json do OneDrive/disco"><i class="fas fa-folder-open"></i> Abrir ficheiro</button>
+        <button class="docs-btn file-save" id="saveFileBtn" title="Descarregar o documento atual (.json)"><i class="fas fa-download"></i> Gravar ficheiro</button>
+        <button class="docs-btn file-save" id="saveFileAsBtn" title="Descarregar com outro nome"><i class="fas fa-file-export"></i> Gravar como…</button>
+        <button class="docs-btn" id="saveAsBtn" title="Gravar como (localStorage)"><i class="fas fa-copy"></i> Cópia local</button>
+        <button class="docs-btn" id="renameDocBtn" title="Renomear"><i class="fas fa-pen"></i> Renomear</button>
+        <button class="docs-btn danger" id="deleteDocBtn" title="Apagar documento"><i class="fas fa-trash"></i> Apagar</button>
+    </div>
+
+    <div class="storage-info" id="storageInfo">
+        <span><i class="fas fa-database"></i> <strong>LocalStorage:</strong> <span id="storageUsed">0 KB</span></span>
+        <div class="storage-bar">
+            <div class="storage-fill" id="storageBar" style="width:0%"></div>
+        </div>
+        <span><strong>IndexedDB:</strong> <span id="idbUsed">0 KB</span></span>
+    </div>
+
+    <div class="storage-info" id="fileInfoBar">
+        <span><i class="fas fa-file"></i> <strong>Ficheiro:</strong> <span id="currentFileLabel">(nenhum — a usar localStorage)</span></span>
+        <span id="fileSyncState" style="font-weight:600;color:#27ae60;"></span>
+    </div>
+
+    <div class="action-bar">
+        <button id="saveDataBtn" class="save"><i class="fas fa-save"></i> Gravar Documento</button>
+        <button id="saveExcelBtn" class="success"><i class="fas fa-file-excel"></i> Salvar Excel</button>
+        <button id="importExcelBtn" class="warning"><i class="fas fa-file-import"></i> Importar Excel</button>
+        <input type="file" id="importFileInput" accept=".xlsx,.xls" class="file-input-hidden">
+        <button id="mapBtn" class="primary"><i class="fas fa-map-marked-alt"></i> Mapa Despesas</button>
+        <button id="printPdfBtn" style="background:#c0392b;color:white;"><i class="fas fa-file-pdf"></i> Imprimir PDF</button>
+        <button id="cameraBtn" class="purple" style="display:none;"><i class="fas fa-camera"></i> Tirar Foto</button>
+    </div>
+
+    <div class="company-panel">
+        <div class="reference-header-title">
+            <span><i class="fas fa-building"></i> DADOS PARA O CABEÇALHO</span>
+            <button class="header-toggle-btn" id="companyToggleBtn" onclick="toggleCompanyPanel()">
+                <i class="fas fa-eye" id="companyToggleBtnIcon"></i>
+                <span id="companyToggleBtnText">Mostrar</span>
+            </button>
+        </div>
+        <div class="company-panel-body hidden" id="companyPanelBody">
+            <div class="company-grid">
+                <div class="company-item company-item-name"><label>Nome</label><input type="text" id="userName" value="RUI MIGUEL FIGUEIREDO DOS SANTOS"></div>
+                <div class="company-item company-item-address"><label>Morada</label><input type="text" id="address" value="Rua da Pecuária, 28. 2820-320 Charneca de Caparica. Portugal"></div>		
+                <div class="company-item company-logo">
+                    <label>Logotipo</label>
+                    <div style="display:flex; align-items:center; gap:15px; flex-wrap:wrap;">
+                        <div class="logo-preview" id="logoPreview">
+                            <span class="placeholder" id="logoPlaceholder"><i class="fas fa-image" style="font-size:2rem; display:block;"></i>Sem logo</span>
+                            <img id="logoImage" style="display:none;" alt="Logotipo">
+                        </div>
+                        <div class="logo-actions">
+                            <button class="btn-upload" onclick="document.getElementById('logoInput').click()"><i class="fas fa-upload"></i> Carregar</button>
+                            <button class="btn-remove-logo" onclick="removeLogo()"><i class="fas fa-trash"></i> Remover</button>
+                        </div>
+                        <input type="file" id="logoInput" accept="image/*" class="file-input-hidden" onchange="loadLogo(event)">
+                    </div>
+                </div>
+                <div class="company-item company-item-company"><label>Empresa / Cargo</label><input type="text" id="company" value="C4I Solutions - Engineering and Management Services"></div>
+                <div class="company-item company-item-nif"><label>Contacto</label><input type="text" id="nif" value="217 808 344"></div>
+                <div class="company-item company-item-contact"><label>NIF</label><input type="text" id="contact" value="(+351) 96 456 6210"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="reference-header-wrapper">
+        <div class="reference-header-title">
+            <span><i class="fas fa-info-circle"></i> CABEÇALHO DE REFERÊNCIA</span>
+            <button class="header-toggle-btn" id="refHeaderToggleBtn" onclick="toggleReferenceHeader()">
+                <i class="fas fa-eye-slash" id="refHeaderToggleIcon"></i>
+                <span id="refHeaderToggleText">Esconder</span>
+            </button>
+        </div>
+        <div class="reference-header-body" id="referenceHeaderBody">
+            <div class="expense-header">
+                <div class="header-item header-item-month"><label>Mês</label><input type="month" id="month" value=""></div>
+                <div class="header-item header-item-reference"><label>Referência</label><input type="text" id="reference" placeholder="Ref. viagem" value=""></div>
+                <div class="header-item header-item-resume"><label>Resumo</label><textarea id="resume" placeholder="Resumo da despesa" rows="2"></textarea></div>
+                <div class="header-item header-total"><span>Total EUR</span> <span id="totalEur">0.00</span></div>
+                <div class="header-item header-item-from"><label>De (From)</label><input type="date" id="periodFrom" value=""></div>
+                <div class="header-item header-item-to"><label>Até (To)</label><input type="date" id="periodTo" value=""></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="insert-expense-wrapper">
+        <div class="reference-header-title">
+            <span><i class="fas fa-plus-circle"></i> INSERIR DESPESA</span>
+        </div>
+        <div class="add-row" id="addRow">
+            <div class="field-group"><label>Data</label><input type="date" id="newDate" value=""></div>
+            <div class="field-group">
+                <label>Categoria</label>
+                <select id="newCategory">
+                    <option value=""></option>
+                    <option value="Airfare">Airfare</option>
+					<option value="Bank">Bank</option>
+                    <option value="Comms">Comms</option>
+					<option value="Car Rental">Car Rental</option>
+					<option value="Car Park">Car Park</option>
+					<option value="Consumables">Consumables</option>
+                    <option value="Food">Food</option>
+					<option value="Fuel">Fuel</option>
+					<option value="Hotel">Hotel</option>
+                    <option value="Insurance">Insurance</option>
+					<option value="Others">Others</option>
+                    <option value="Post Mail">Post Mail</option>
+					<option value="Social Tax">Social Tax</option>
+                    <option value="Tool">Tool</option>
+					<option value="Transports">Transports</option>
+					<option value="Travel">Travel</option>
+                </select>
+            </div>
+            <div class="field-group"><label>Descrição</label><input type="text" id="newDescription" placeholder="Descrição" value=""></div>
+            <div class="field-group">
+                <label>Moeda Original</label>
+                <div class="currency-group">
+                    <input type="number" id="newAmount" placeholder="Valor" step="0.01" value="">
+                    <select id="newCurrency">
+                        <option value="EUR">EUR</option>
+						<option value="AUD">AUD</option>
+						<option value="GBP">GBP</option>
+                        <option value="USD">USD</option>
+						<option value="NOK">NOK</option>
+						<option value="SEK">SEK</option>
+						<option value="DKK">DKK</option>
+                    </select>
+                </div>
+            </div>
+            <div class="field-group"><label>Preço (EUR)</label><input type="number" id="newPrice" placeholder="Preço EUR" step="0.01" value=""></div>
+            <div class="field-group" style="flex: 0 0 auto; min-width: 130px;">
+                <label>&nbsp;</label>
+                <div style="display:flex; gap:6px;">
+                    <button type="button" id="pendingAttachBtn" style="padding:8px 14px; background:#8e44ad; color:white; border:none; border-radius:6px; font-weight:600; cursor:pointer; height:38px; font-size:0.85rem; white-space:nowrap; display:inline-flex; align-items:center; gap:6px;">
+                        <i class="fas fa-paperclip"></i> Anexar
+                    </button>
+                </div>
+            </div>
+            <div class="add-btn-group">
+                <button class="btn-add" id="addExpenseBtn"><i class="fas fa-plus"></i> Adicionar</button>
+                <button class="btn-clear-all" id="clearAllBtn"><i class="fas fa-trash-alt"></i> Limpar Tudo</button>
+            </div>
+        </div>
+        <div id="pendingAttachments"></div>
+    </div>
+
+    <div class="table-wrapper">
+        <table>
+            <thead><tr><th>#</th><th>Data</th><th>Categoria</th><th>Descrição</th><th>Moeda Orig.</th><th>Preço (EUR)</th><th style="min-width:130px;">Anexos</th><th>Ações</th></tr></thead>
+            <tbody id="expensesBody"></tbody>
+        </table>
+    </div>
+
+    <div class="chart-container" id="chartContainer">
+        <div class="chart-summary">
+            <canvas id="categoryChart" width="300" height="250"></canvas>
+            <div>
+                <h4>Resumo por Categoria</h4>
+                <table class="summary-table" id="summaryTable">
+                    <thead><tr><th>Categoria</th><th>EUR</th><th>Média/dia</th></tr></thead>
+                    <tbody id="summaryBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal" id="modalView">
+    <div class="modal-content">
+        <span class="modal-close" id="modalClose">&times;</span>
+        <h3 id="modalTitle">Visualização</h3>
+        <div id="modalBody"></div>
+    </div>
+</div>
+
+<div class="modal" id="modalEdit">
+    <div class="modal-content" style="max-width: 600px;">
+        <span class="modal-close" id="modalEditClose">&times;</span>
+        <h3 style="color:#1a3a5c; margin-bottom:15px;"><i class="fas fa-edit" style="color:#f39c12;"></i> Editar Despesa</h3>
+        <div class="edit-form" style="display:flex; flex-direction:column; gap:12px;">
+            <div style="display:flex; flex-direction:column;">
+                <label style="font-size:0.75rem;font-weight:600;color:#1a3a5c;margin-bottom:4px;text-transform:uppercase;">Data</label>
+                <input type="date" id="editDate" style="padding:8px 10px;border:1px solid #cddae9;border-radius:6px;font-size:0.95rem;">
+            </div>
+            <div style="display:flex; flex-direction:column;">
+                <label style="font-size:0.75rem;font-weight:600;color:#1a3a5c;margin-bottom:4px;text-transform:uppercase;">Categoria</label>
+                <select id="editCategory" style="padding:8px 10px;border:1px solid #cddae9;border-radius:6px;font-size:0.95rem;">
+                    <option value=""></option>
+                    <option value="Airfare">Airfare</option>
+					<option value="Bank">Bank</option>
+                    <option value="Comms">Comms</option>
+					<option value="Car Rental">Car Rental</option>
+					<option value="Car Park">Car Park</option>
+					<option value="Consumables">Consumables</option>
+                    <option value="Food">Food</option>
+					<option value="Fuel">Fuel</option>
+					<option value="Hotel">Hotel</option>
+                    <option value="Insurance">Insurance</option>
+					<option value="Others">Others</option>
+                    <option value="Post Mail">Post Mail</option>
+					<option value="Social Tax">Social Tax</option>
+                    <option value="Tool">Tool</option>
+					<option value="Transports">Transports</option>
+					<option value="Travel">Travel</option>
+                </select>
+            </div>
+            <div style="display:flex; flex-direction:column;">
+                <label style="font-size:0.75rem;font-weight:600;color:#1a3a5c;margin-bottom:4px;text-transform:uppercase;">Descrição</label>
+                <input type="text" id="editDescription" style="padding:8px 10px;border:1px solid #cddae9;border-radius:6px;font-size:0.95rem;">
+            </div>
+            <div style="display:flex; gap:12px;">
+                <div style="display:flex; flex-direction:column; flex:1;">
+                    <label style="font-size:0.75rem;font-weight:600;color:#1a3a5c;margin-bottom:4px;text-transform:uppercase;">Valor Original</label>
+                    <input type="number" id="editAmount" step="0.01" style="padding:8px 10px;border:1px solid #cddae9;border-radius:6px;font-size:0.95rem;">
+                </div>
+                <div style="display:flex; flex-direction:column; flex:1;">
+                    <label style="font-size:0.75rem;font-weight:600;color:#1a3a5c;margin-bottom:4px;text-transform:uppercase;">Moeda</label>
+                    <select id="editCurrency" style="padding:8px 10px;border:1px solid #cddae9;border-radius:6px;font-size:0.95rem;">
+                        <option value="EUR">EUR</option>
+						<option value="AUD">AUD</option>
+						<option value="GBP">GBP</option>
+						<option value="USD">USD</option>
+						<option value="NOK">NOK</option>
+						<option value="SEK">SEK</option>
+						<option value="DKK">DKK</option>
+                    </select>
+                </div>
+            </div>
+            <div style="display:flex; flex-direction:column;">
+                <label style="font-size:0.75rem;font-weight:600;color:#1a3a5c;margin-bottom:4px;text-transform:uppercase;">Preço (EUR)</label>
+                <input type="number" id="editPrice" step="0.01" style="padding:8px 10px;border:1px solid #cddae9;border-radius:6px;font-size:0.95rem;">
+            </div>
+            <div style="display:flex; gap:10px; margin-top:10px; justify-content:flex-end;">
+                <button onclick="cancelEdit()" style="padding:10px 20px;border:none;border-radius:6px;background:#eef4fa;color:#1a3a5c;font-weight:600;cursor:pointer;"><i class="fas fa-times"></i> Cancelar</button>
+                <button onclick="saveEditedExpense()" style="padding:10px 20px;border:none;border-radius:6px;background:#2a7de1;color:white;font-weight:600;cursor:pointer;"><i class="fas fa-save"></i> Guardar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal" id="modalImageEditor">
+    <div class="modal-content" style="max-width: 90vw; width: 90vw; max-height: 95vh;">
+        <span class="modal-close" id="imageEditorClose">&times;</span>
+        <h3 style="color:#1a3a5c; margin-bottom:15px;">
+            <i class="fas fa-crop-alt" style="color:#8e44ad;"></i> Editar Imagem
+            <span id="imageEditorName" style="font-size:0.85rem; color:#666; font-weight:400; margin-left:8px;"></span>
+            <span id="imageEditorPageNav" style="display:none; margin-left:15px; font-size:0.85rem; color:#333;">
+                <button type="button" id="prevPageBtn" style="padding:4px 10px; border:1px solid #cddae9; border-radius:4px; background:white; cursor:pointer; margin-right:5px;">←</button>
+                <span id="imageEditorPageLabel">Página 1 / 1</span>
+                <button type="button" id="nextPageBtn" style="padding:4px 10px; border:1px solid #cddae9; border-radius:4px; background:white; cursor:pointer; margin-left:5px;">→</button>
+            </span>
+        </h3>
+
+        <div class="image-editor-toolbar">
+            <button type="button" id="rotateLeftBtn" title="Rodar 90° esquerda">
+                <i class="fas fa-undo"></i> Rodar ⟲
+            </button>
+            <button type="button" id="rotateRightBtn" title="Rodar 90° direita">
+                <i class="fas fa-redo"></i> Rodar ⟳
+            </button>
+            <span class="toolbar-divider"></span>
+            <button type="button" id="zoomInBtn" title="Aumentar">
+                <i class="fas fa-search-plus"></i> Zoom +
+            </button>
+            <button type="button" id="zoomOutBtn" title="Diminuir">
+                <i class="fas fa-search-minus"></i> Zoom −
+            </button>
+            <button type="button" id="resetCropBtn" title="Repor estado inicial">
+                <i class="fas fa-sync-alt"></i> Reset
+            </button>
+            <span class="toolbar-divider"></span>
+            <button type="button" id="fitCropBtn" title="Ajustar imagem toda">
+                <i class="fas fa-expand"></i> Ver tudo
+            </button>
+            <span class="toolbar-divider"></span>
+            <label style="font-size:0.75rem; font-weight:600; color:#1a3a5c;">Pixels:</label>
+            <select id="imageSizeSelect" style="padding:6px 10px; border:1px solid #cddae9; border-radius:6px; font-size:0.8rem; font-weight:600; color:#1a3a5c; cursor:pointer; background:white;">
+                <option value="original">Original</option>
+                <option value="1600" selected>Grande (1600px)</option>
+                <option value="1024">Médio (1024px)</option>
+                <option value="800">Pequeno (800px)</option>
+                <option value="500">Miniatura (500px)</option>
+            </select>
+            <button type="button" id="sizeDownBtn" title="Reduzir 100px">
+                <i class="fas fa-minus"></i>
+            </button>
+            <span id="imageSizeLabel" style="font-size:0.75rem; font-weight:600; color:#1a3a5c; min-width:55px; text-align:center;">1600px</span>
+            <button type="button" id="sizeUpBtn" title="Aumentar 100px">
+                <i class="fas fa-plus"></i>
+            </button>
+
+            <span class="toolbar-divider"></span>
+            <label style="font-size:0.75rem; font-weight:600; color:#1a3a5c;">
+                <i class="fas fa-ruler-combined"></i> Impressão:
+            </label>
+            <input type="number" id="printWidthCm" step="0.1" min="1" max="50" value="18"
+                   title="Largura de impressão em cm"
+                   style="width:65px; padding:6px 8px; border:1px solid #cddae9; border-radius:6px; font-size:0.8rem; font-weight:600; color:#1a3a5c; text-align:center;">
+            <span style="font-size:0.75rem; color:#1a3a5c;">cm</span>
+            <button type="button" id="lockRatioBtn" title="Proporção bloqueada (simetria mantida)"
+                    style="padding:6px 10px; background:#27ae60; color:white; border:none; border-radius:6px; cursor:pointer; font-size:0.8rem;">
+                <i class="fas fa-link" id="lockRatioIcon"></i>
+            </button>
+            <input type="number" id="printHeightCm" step="0.1" min="1" max="50" value="27"
+                   title="Altura de impressão em cm"
+                   style="width:65px; padding:6px 8px; border:1px solid #cddae9; border-radius:6px; font-size:0.8rem; font-weight:600; color:#1a3a5c; text-align:center;">
+            <span style="font-size:0.75rem; color:#1a3a5c;">cm</span>
+            <button type="button" id="resetPrintSizeBtn" title="Repor tamanho de impressão"
+                    style="padding:6px 10px; border:1px solid #cddae9; border-radius:6px; background:white; color:#1a3a5c; font-size:0.8rem; font-weight:600; cursor:pointer;">
+                <i class="fas fa-undo"></i> Reset
+            </button>
+            <span id="printSizeInfo" style="font-size:0.7rem; color:#666; font-weight:600; min-width:90px; text-align:center;">18.0 × 27.0 cm</span>
+        </div>
+
+        <div class="image-editor-body">
+            <img id="imageToEdit" src="" alt="Para editar" style="max-width: 100%; display: block;">
+        </div>
+
+        <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:15px; flex-wrap:wrap;">
+            <button type="button" id="cancelImageEditBtn" style="padding:10px 20px;border:none;border-radius:6px;background:#eef4fa;color:#1a3a5c;font-weight:600;cursor:pointer;">
+                <i class="fas fa-times"></i> Cancelar
+            </button>
+            <button type="button" id="saveImageEditBtn" style="padding:10px 20px;border:none;border-radius:6px;background:#27ae60;color:white;font-weight:600;cursor:pointer;">
+                <i class="fas fa-save"></i> Guardar Alterações
+            </button>
+        </div>
+    </div>
+</div>
+
+<div id="cameraContainer">
+    <video id="video" autoplay></video>
+    <div class="cam-controls">
+        <button class="capture" id="captureBtn"><i class="fas fa-camera"></i> Capturar</button>
+        <button class="close-cam" id="closeCamBtn"><i class="fas fa-times"></i> Fechar</button>
+    </div>
+</div>
+
+<script>
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+    const MAX_PDF_PAGES = 3;
+
+    // =====================================================
+    // INDEXEDDB
+    // =====================================================
+    const DB_NAME = 'expenses_attachments_db';
+    const DB_VERSION = 1;
+    const STORE_NAME = 'attachments';
+    let db = null;
+
+    function openDB() {
+        return new Promise((resolve, reject) => {
+            if (db) return resolve(db);
+            const req = indexedDB.open(DB_NAME, DB_VERSION);
+            req.onupgradeneeded = (e) => {
+                const database = e.target.result;
+                if (!database.objectStoreNames.contains(STORE_NAME)) {
+                    database.createObjectStore(STORE_NAME, { keyPath: 'id' });
+                }
+            };
+            req.onsuccess = (e) => { db = e.target.result; resolve(db); };
+            req.onerror = (e) => { console.error('Erro a abrir IndexedDB:', e); reject(e); };
+        });
+    }
+
+    async function idbPut(id, dataObj) {
+        await openDB();
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction(STORE_NAME, 'readwrite');
+            const store = tx.objectStore(STORE_NAME);
+            const req = store.put({ id, ...dataObj });
+            req.onsuccess = () => resolve(req.result);
+            req.onerror = (e) => reject(e);
+        });
+    }
+
+    async function idbGet(id) {
+        await openDB();
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction(STORE_NAME, 'readonly');
+            const store = tx.objectStore(STORE_NAME);
+            const req = store.get(id);
+            req.onsuccess = () => resolve(req.result || null);
+            req.onerror = (e) => reject(e);
+        });
+    }
+
+    async function idbDelete(id) {
+        await openDB();
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction(STORE_NAME, 'readwrite');
+            const store = tx.objectStore(STORE_NAME);
+            const req = store.delete(id);
+            req.onsuccess = () => resolve();
+            req.onerror = (e) => reject(e);
+        });
+    }
+
+    async function idbGetAll() {
+        await openDB();
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction(STORE_NAME, 'readonly');
+            const store = tx.objectStore(STORE_NAME);
+            const req = store.getAll();
+            req.onsuccess = () => resolve(req.result || []);
+            req.onerror = (e) => reject(e);
+        });
+    }
+
+    function generateAttachmentId() {
+        return 'att_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    }
+
+    // =====================================================
+    // COMPRESSÃO DE IMAGENS
+    // =====================================================
+    async function compressImage(dataUrl, maxWidth = 1600, quality = 0.75) {
+        return new Promise((resolve) => {
+            if (!dataUrl || !dataUrl.startsWith('data:image')) {
+                return resolve(dataUrl);
+            }
+            const img = new Image();
+            img.onload = () => {
+                try {
+                    let { width, height } = img;
+                    if (width <= maxWidth && height <= maxWidth) {
+                        const canvas = document.createElement('canvas');
+                        canvas.width = width;
+                        canvas.height = height;
+                        canvas.getContext('2d').drawImage(img, 0, 0);
+                        const compressed = canvas.toDataURL('image/jpeg', quality);
+                        return resolve(compressed.length < dataUrl.length ? compressed : dataUrl);
+                    }
+                    const ratio = Math.min(maxWidth / width, maxWidth / height);
+                    width = Math.round(width * ratio);
+                    height = Math.round(height * ratio);
+                    const canvas = document.createElement('canvas');
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+                    const compressed = canvas.toDataURL('image/jpeg', quality);
+                    resolve(compressed);
+                } catch (e) {
+                    console.error('Erro na compressão:', e);
+                    resolve(dataUrl);
+                }
+            };
+            img.onerror = () => resolve(dataUrl);
+            img.src = dataUrl;
+        });
+    }
+
+    // =====================================================
+    // CONVERSÃO PDF → ARRAY DE IMAGENS
+    // =====================================================
+    async function convertPdfToImages(pdfData) {
+        try {
+            const pdf = await pdfjsLib.getDocument({ data: pdfData }).promise;
+            if (!pdf || pdf.numPages === 0) {
+                console.warn('PDF sem páginas');
+                return { images: [], totalPages: 0, truncated: false };
+            }
+
+            const totalPages = pdf.numPages;
+            const pagesToConvert = Math.min(totalPages, MAX_PDF_PAGES);
+            const images = [];
+
+            for (let p = 1; p <= pagesToConvert; p++) {
+                try {
+                    const page = await pdf.getPage(p);
+                    const baseViewport = page.getViewport({ scale: 1 });
+                    const MAX_DIM = 2200;
+                    const scale = Math.min(2.0, MAX_DIM / Math.max(baseViewport.width, baseViewport.height));
+                    const viewport = page.getViewport({ scale: scale });
+
+                    const canvas = document.createElement('canvas');
+                    canvas.width = Math.round(viewport.width);
+                    canvas.height = Math.round(viewport.height);
+                    const context = canvas.getContext('2d');
+                    context.fillStyle = '#FFFFFF';
+                    context.fillRect(0, 0, canvas.width, canvas.height);
+
+                    await page.render({ canvasContext: context, viewport: viewport }).promise;
+                    images.push(canvas.toDataURL('image/jpeg', 0.85));
+                } catch (e) {
+                    console.warn(`Erro a converter página ${p}`, e);
+                }
+            }
+
+            return {
+                images: images,
+                totalPages: totalPages,
+                truncated: totalPages > MAX_PDF_PAGES
+            };
+        } catch (error) {
+            console.error('Erro ao converter PDF:', error);
+            return { images: [], totalPages: 0, truncated: false };
+        }
+    }
+
+    // =====================================================
+    // HELPERS PARA ANEXOS
+    // =====================================================
+    function getAttPages(att) {
+        if (att.pages && Array.isArray(att.pages) && att.pages.length > 0) return att.pages;
+        if (att.data) return [att.data];
+        return [];
+    }
+
+    // =====================================================
+    // ESTADO
+    // =====================================================
+    let expenses = [];
+    let nextId = 1;
+    let chartInstance = null;
+    let targetExpenseIdForCamera = null;
+    let stream = null;
+    let companyLogo = null;
+    let editingExpenseId = null;
+    let pendingAttachments = [];
+    let cropperInstance = null;
+    let editingAttachment = null;
+    let outputMaxSize = 1600;
+
+    let printWidthCm = 18;
+    let printHeightCm = 27;
+    let lockRatio = true;
+    let originalImageRatio = 1;
+
+    // =====================================================
+    // GESTÃO DE FICHEIROS (.json) — via download
+    // =====================================================
+    let currentFileName = null;
+
+    function fsSupported() { return false; }
+
+    function setFileLabel(name, state = '') {
+        const lbl = document.getElementById('currentFileLabel');
+        const st  = document.getElementById('fileSyncState');
+        if (lbl) lbl.textContent = name ? name : '(nenhum — a usar localStorage)';
+        if (st)  st.textContent  = state;
+    }
+
+    async function serializeCurrentState() {
+        const expensesCopy = JSON.parse(JSON.stringify(expenses));
+        for (const exp of expensesCopy) {
+            for (const att of (exp.attachments || [])) {
+                let pages = [];
+                if (att.id) {
+                    const rec = await idbGet(att.id);
+                    if (rec && rec.pages) pages = rec.pages;
+                    else if (rec && rec.data) pages = [rec.data];
+                }
+                if (pages.length === 0 && att.pages) pages = att.pages.filter(p => p);
+                if (pages.length === 0 && att.data) pages = [att.data];
+                att.pages = pages;
+                delete att.data;
+                delete att.id;
+            }
+        }
+        return {
+            _format: 'expenses-app',
+            _version: 4,
+            savedAt: new Date().toISOString(),
+            docName: getCurrentDocName(),
+            company: {
+                userName: document.getElementById('userName').value,
+                company:  document.getElementById('company').value,
+                nif:      document.getElementById('nif').value,
+                address:  document.getElementById('address').value,
+                contact:  document.getElementById('contact').value,
+                logo:     companyLogo
+            },
+            header: {
+                month:      monthInput.value,
+                periodFrom: periodFrom.value,
+                periodTo:   periodTo.value,
+                reference:  referenceInput.value,
+                resume:     resumeInput.value
+            },
+            expenses: expensesCopy,
+            nextId: nextId
+        };
+    }
+
+    async function applyLoadedState(data) {
+        expenses = data.expenses || [];
+        nextId   = data.nextId || (expenses.length > 0 ? Math.max(...expenses.map(e => e.id)) + 1 : 1);
+
+        for (const exp of expenses) {
+            for (const att of (exp.attachments || [])) {
+                if (att.pages && Array.isArray(att.pages) && att.pages.length && att.pages.some(p => p)) {
+                    const pagesToStore = att.pages.filter(p => p);
+                    const newId = generateAttachmentId();
+                    await idbPut(newId, {
+                        pages: pagesToStore,
+                        name: att.name,
+                        type: att.type,
+                        originalType: att.originalType || null,
+                        printDims: att.printDims || null
+                    });
+                    att.id = newId;
+                    att.pages = pagesToStore.map(() => null);
+                }
+            }
+        }
+
+        if (data.company) {
+            document.getElementById('userName').value = data.company.userName || '';
+            document.getElementById('company').value  = data.company.company  || '';
+            document.getElementById('nif').value      = data.company.nif      || '';
+            document.getElementById('address').value  = data.company.address  || '';
+            document.getElementById('contact').value  = data.company.contact  || '';
+            if (data.company.logo) {
+                companyLogo = data.company.logo;
+                document.getElementById('logoImage').src = companyLogo;
+                document.getElementById('logoImage').style.display = 'block';
+                document.getElementById('logoPlaceholder').style.display = 'none';
+            } else {
+                removeLogo();
+            }
+        } else {
+            removeLogo();
+        }
+        if (data.header) {
+            monthInput.value      = data.header.month      || '';
+            periodFrom.value      = data.header.periodFrom || '';
+            periodTo.value        = data.header.periodTo   || '';
+            referenceInput.value  = data.header.reference  || '';
+            resumeInput.value     = data.header.resume     || '';
+            resumeInput.style.height = 'auto';
+            resumeInput.style.height = Math.max(100, resumeInput.scrollHeight) + 'px';
+        }
+        renderTable();
+    }
+
+    async function openFileFromDisk() {
+        const inp = document.createElement('input');
+        inp.type = 'file';
+        inp.accept = '.json,application/json';
+        inp.onchange = async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            try {
+                const text = await file.text();
+                const data = JSON.parse(text);
+                await applyLoadedState(data);
+                currentFileName = file.name;
+                setFileLabel(file.name, '✅ aberto de ficheiro');
+                alert(`✅ "${file.name}" carregado (${expenses.length} despesas).\n\nPara gravar, use "Gravar ficheiro" ou "Gravar como…" e depois substitua o ficheiro na pasta do OneDrive.`);
+            } catch (err) {
+                console.error(err);
+                alert('❌ Ficheiro inválido: ' + err.message);
+            }
+        };
+        inp.click();
+    }
+
+    async function downloadJsonFile(suggestedName) {
+        const data = await serializeCurrentState();
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = suggestedName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 2000);
+    }
+
+    async function saveToFile() {
+        if (!currentFileName) return saveToFileAs();
+
+        const nomeAtual = currentFileName;
+        const ok = confirm(
+            `Vai ser descarregado o ficheiro:\n\n  ${nomeAtual}\n\n` +
+            `Depois substitua o ficheiro original na pasta do OneDrive.\n\n` +
+            `Continuar?`
+        );
+        if (!ok) return;
+
+        await downloadJsonFile(nomeAtual);
+        setFileLabel(nomeAtual, '✅ descarregado ' + new Date().toLocaleTimeString('pt-PT'));
+    }
+
+    async function saveToFileAs() {
+        const sugestaoBase = (getCurrentDocName() || 'Documento').replace(/[^a-zA-Z0-9._-]/g, '_');
+        const sugestao = currentFileName || (sugestaoBase + '.expenses.json');
+
+        const nome = prompt(
+            'Nome do ficheiro a descarregar (com extensão .json):\n\n' +
+            'Nota: o ficheiro vai para a pasta de Downloads. Depois mova-o para a pasta do OneDrive.',
+            sugestao
+        );
+        if (!nome) return;
+
+        const nomeLimpo = nome.trim();
+        if (!nomeLimpo) return;
+
+        await downloadJsonFile(nomeLimpo);
+        currentFileName = nomeLimpo;
+        setFileLabel(nomeLimpo, '✅ descarregado ' + new Date().toLocaleTimeString('pt-PT'));
+        alert(`✅ Ficheiro "${nomeLimpo}" descarregado.\n\nMova-o para a pasta do OneDrive.`);
+    }
+
+    // =====================================================
+    // DOM REFS
+    // =====================================================
+    const tbody = document.getElementById('expensesBody');
+    const totalSpan = document.getElementById('totalEur');
+    const monthInput = document.getElementById('month');
+    const periodFrom = document.getElementById('periodFrom');
+    const periodTo = document.getElementById('periodTo');
+    const referenceInput = document.getElementById('reference');
+    const resumeInput = document.getElementById('resume');
+    const newDate = document.getElementById('newDate');
+    const newCategory = document.getElementById('newCategory');
+    const newDescription = document.getElementById('newDescription');
+    const newAmount = document.getElementById('newAmount');
+    const newCurrency = document.getElementById('newCurrency');
+    const newPrice = document.getElementById('newPrice');
+    const addBtn = document.getElementById('addExpenseBtn');
+
+    resumeInput.addEventListener('input', function() {
+        this.style.height = 'auto';
+        this.style.height = Math.max(100, this.scrollHeight) + 'px';
+    });
+
+    // =====================================================
+    // TOGGLES
+    // =====================================================
+    function toggleReferenceHeader() {
+        const body = document.getElementById('referenceHeaderBody');
+        const icon = document.getElementById('refHeaderToggleIcon');
+        const text = document.getElementById('refHeaderToggleText');
+        body.classList.toggle('hidden');
+        if (body.classList.contains('hidden')) { icon.className = 'fas fa-eye'; text.textContent = 'Mostrar'; }
+        else { icon.className = 'fas fa-eye-slash'; text.textContent = 'Esconder'; }
+    }
+
+    function toggleCompanyPanel() {
+        const body = document.getElementById('companyPanelBody');
+        const btnIcon = document.getElementById('companyToggleBtnIcon');
+        const btnText = document.getElementById('companyToggleBtnText');
+        body.classList.toggle('hidden');
+        if (body.classList.contains('hidden')) { btnIcon.className = 'fas fa-eye'; btnText.textContent = 'Mostrar'; }
+        else { btnIcon.className = 'fas fa-eye-slash'; btnText.textContent = 'Esconder'; }
+    }
+
+    // =====================================================
+    // MOEDA AUTO
+    // =====================================================
+    newAmount.addEventListener('blur', function() {
+        if (this.value !== '' && !isNaN(parseFloat(this.value))) this.value = parseFloat(this.value).toFixed(2);
+        if (newCurrency.value === 'EUR' && this.value !== '') newPrice.value = parseFloat(this.value).toFixed(2);
+    });
+    newAmount.addEventListener('input', function() {
+        if (newCurrency.value === 'EUR' && this.value !== '' && !isNaN(parseFloat(this.value))) newPrice.value = parseFloat(this.value).toFixed(2);
+    });
+    newCurrency.addEventListener('change', function() {
+        if (this.value === 'EUR' && newAmount.value !== '' && !isNaN(parseFloat(newAmount.value))) {
+            newAmount.value = parseFloat(newAmount.value).toFixed(2);
+            newPrice.value = parseFloat(newAmount.value).toFixed(2);
+        }
+    });
+
+    // =====================================================
+    // LOGO
+    // =====================================================
+    async function loadLogo(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = async function(e) {
+            const compressed = await compressImage(e.target.result, 400, 0.85);
+            companyLogo = compressed;
+            document.getElementById('logoImage').src = companyLogo;
+            document.getElementById('logoImage').style.display = 'block';
+            document.getElementById('logoPlaceholder').style.display = 'none';
+        };
+        reader.readAsDataURL(file);
+    }
+
+    function removeLogo() {
+        companyLogo = null;
+        document.getElementById('logoImage').style.display = 'none';
+        document.getElementById('logoImage').src = '';
+        document.getElementById('logoPlaceholder').style.display = 'block';
+        document.getElementById('logoInput').value = '';
+    }
+
+    // =====================================================
+    // FORMATAÇÃO
+    // =====================================================
+    function formatDate(d) { if (!d) return ''; const dt = new Date(d); return dt.toLocaleDateString('pt-PT'); }
+    function formatDateShort(d) { if (!d) return ''; const dt = new Date(d); return String(dt.getDate()).padStart(2,'0') + '-' + String(dt.getMonth()+1).padStart(2,'0') + '-' + String(dt.getFullYear()).slice(-2); }
+    function formatCurrency(v) {
+        const num = Number(v) || 0;
+        const parts = Math.abs(num).toFixed(2).split('.');
+        let intPart = parts[0];
+        const decPart = parts[1];
+        intPart = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        return (num < 0 ? '-' : '') + intPart + '.' + decPart;
+    }
+    function getTotal() { return expenses.reduce((sum, e) => sum + Number(e.priceEur), 0); }
+    function updateTotal() { totalSpan.textContent = formatCurrency(getTotal()); }
+    function getDaysBetween() { const from = new Date(periodFrom.value); const to = new Date(periodTo.value); if (isNaN(from) || isNaN(to) || from > to) return 1; return Math.max(1, (to - from) / (1000*60*60*24) + 1); }
+
+    // =====================================================
+    // TAMANHO FÍSICO DE IMPRESSÃO
+    // =====================================================
+    function updatePrintSizeInfo() {
+        const info = document.getElementById('printSizeInfo');
+        if (info) info.textContent = `${printWidthCm.toFixed(1)} × ${printHeightCm.toFixed(1)} cm`;
+    }
+
+    function setPrintWidth(value) {
+        let w = parseFloat(value);
+        if (isNaN(w) || w <= 0) return;
+        w = Math.min(50, Math.max(1, w));
+        printWidthCm = w;
+        if (lockRatio && originalImageRatio > 0) {
+            printHeightCm = Math.round((w / originalImageRatio) * 100) / 100;
+            printHeightCm = Math.min(50, Math.max(1, printHeightCm));
+            document.getElementById('printHeightCm').value = printHeightCm.toFixed(1);
+        }
+        document.getElementById('printWidthCm').value = printWidthCm.toFixed(1);
+        updatePrintSizeInfo();
+    }
+
+    function setPrintHeight(value) {
+        let h = parseFloat(value);
+        if (isNaN(h) || h <= 0) return;
+        h = Math.min(50, Math.max(1, h));
+        printHeightCm = h;
+        if (lockRatio && originalImageRatio > 0) {
+            printWidthCm = Math.round((h * originalImageRatio) * 100) / 100;
+            printWidthCm = Math.min(50, Math.max(1, printWidthCm));
+            document.getElementById('printWidthCm').value = printWidthCm.toFixed(1);
+        }
+        document.getElementById('printHeightCm').value = printHeightCm.toFixed(1);
+        updatePrintSizeInfo();
+    }
+
+    function toggleLockRatio() {
+        lockRatio = !lockRatio;
+        const icon = document.getElementById('lockRatioIcon');
+        const btn = document.getElementById('lockRatioBtn');
+        if (lockRatio) {
+            icon.className = 'fas fa-link';
+            btn.style.background = '#27ae60';
+            btn.title = 'Proporção bloqueada (simetria mantida)';
+            if (originalImageRatio > 0) {
+                printHeightCm = Math.round((printWidthCm / originalImageRatio) * 100) / 100;
+                printHeightCm = Math.min(50, Math.max(1, printHeightCm));
+                document.getElementById('printHeightCm').value = printHeightCm.toFixed(1);
+            }
+        } else {
+            icon.className = 'fas fa-unlink';
+            btn.style.background = '#e67e22';
+            btn.title = 'Proporção livre (pode distorcer)';
+        }
+        updatePrintSizeInfo();
+    }
+
+    function resetPrintSize() {
+        printWidthCm = 18;
+        printHeightCm = 27;
+        if (lockRatio && originalImageRatio > 0) {
+            printHeightCm = Math.round((18 / originalImageRatio) * 100) / 100;
+            printHeightCm = Math.min(50, Math.max(1, printHeightCm));
+        }
+        document.getElementById('printWidthCm').value = printWidthCm.toFixed(1);
+        document.getElementById('printHeightCm').value = printHeightCm.toFixed(1);
+        updatePrintSizeInfo();
+    }
+
+    // =====================================================
+    // ANEXOS PENDENTES
+    // =====================================================
+    function renderPendingAttachments() {
+        const container = document.getElementById('pendingAttachments');
+        container.innerHTML = '';
+        if (pendingAttachments.length === 0) { container.classList.remove('has-items'); return; }
+        container.classList.add('has-items');
+        pendingAttachments.forEach((att, idx) => {
+            const tag = document.createElement('span');
+            tag.className = 'pending-tag';
+            const pg = att.pages && att.pages.length > 1 ? ` · ${att.pages.length} págs` : '';
+            tag.innerHTML = `<i class="fas fa-file"></i> ${att.name}${pg} <i class="fas fa-times remove-pending" onclick="removePendingAttachment(${idx})" title="Remover"></i>`;
+            container.appendChild(tag);
+        });
+    }
+
+    function removePendingAttachment(index) {
+        pendingAttachments.splice(index, 1);
+        renderPendingAttachments();
+    }
+
+    async function addPendingAttachment() {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.pdf,.jpg,.jpeg,.png';
+        input.multiple = true;
+        input.onchange = async (e) => {
+            const files = Array.from(e.target.files);
+            if (!files.length) return;
+            let okCount = 0, failCount = 0;
+            let truncatedNames = [];
+
+            for (const file of files) {
+                try {
+                    if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
+                        const arrayBuffer = await file.arrayBuffer();
+                        let result = { images: [], totalPages: 0, truncated: false };
+                        try { result = await convertPdfToImages(arrayBuffer); } catch (err) { console.error(err); }
+
+                        if (result.images.length > 0) {
+                            const compressedPages = [];
+                            for (const img of result.images) {
+                                compressedPages.push(await compressImage(img, 1600, 0.75));
+                            }
+                            pendingAttachments.push({
+                                name: file.name,
+                                pages: compressedPages,
+                                type: 'image/jpeg',
+                                originalType: 'pdf'
+                            });
+                            okCount++;
+                            if (result.truncated) truncatedNames.push(file.name);
+                        } else if (file.size <= 5 * 1024 * 1024) {
+                            const base64 = await new Promise((resolve) => {
+                                const r = new FileReader();
+                                r.onload = (ev) => resolve(ev.target.result);
+                                r.readAsDataURL(file);
+                            });
+                            pendingAttachments.push({
+                                name: file.name,
+                                pages: [base64],
+                                type: 'application/pdf',
+                                originalType: 'pdf'
+                            });
+                            okCount++;
+                        } else {
+                            failCount++;
+                            console.warn('PDF demasiado grande e não convertido:', file.name);
+                        }
+                    } else {
+                        const dataUrl = await new Promise((resolve) => {
+                            const reader = new FileReader();
+                            reader.onload = (ev) => resolve(ev.target.result);
+                            reader.readAsDataURL(file);
+                        });
+                        const compressed = await compressImage(dataUrl, 1600, 0.75);
+                        pendingAttachments.push({ name: file.name, pages: [compressed], type: 'image/jpeg' });
+                        okCount++;
+                    }
+                } catch (error) {
+                    failCount++;
+                    console.error('Erro ao processar ficheiro:', file.name, error);
+                }
+            }
+
+            if (truncatedNames.length > 0) {
+                alert(`⚠️ Aviso: os seguintes PDFs têm mais de ${MAX_PDF_PAGES} páginas. Apenas as primeiras ${MAX_PDF_PAGES} foram anexadas:\n\n` + truncatedNames.join('\n'));
+            }
+            if (failCount > 0) {
+                alert(`⚠️ ${okCount} ficheiro(s) processado(s).\n${failCount} falhou(aram) — ver consola (F12) para detalhes.`);
+            }
+            renderPendingAttachments();
+        };
+        input.click();
+    }
+
+    function clearPendingAttachments() {
+        pendingAttachments = [];
+        renderPendingAttachments();
+    }
+
+    // =====================================================
+    // RENDER
+    // =====================================================
+    function renderTable() {
+        expenses.sort((a, b) => {
+            const dateA = a.date || '';
+            const dateB = b.date || '';
+            if (dateA !== dateB) return dateA.localeCompare(dateB);
+            const catA = (a.category || '').toLowerCase();
+            const catB = (b.category || '').toLowerCase();
+            if (catA !== catB) return catA.localeCompare(catB);
+            const descA = (a.description || '').toLowerCase();
+            const descB = (b.description || '').toLowerCase();
+            return descA.localeCompare(descB);
+        });
+
+        tbody.innerHTML = '';
+        expenses.forEach((exp, idx) => {
+            const tr = document.createElement('tr');
+            const currencyDisplay = exp.amount && exp.currency ? `${formatCurrency(exp.amount)} ${exp.currency}` : '';
+            tr.innerHTML = `
+                <td data-label="#">${idx+1}</td>
+                <td data-label="Data">${formatDate(exp.date)}</td>
+                <td data-label="Categoria"><span class="category-badge">${exp.category}</span></td>
+                <td data-label="Descrição">${exp.description}</td>
+                <td data-label="Moeda" class="currency-cell-original">${currencyDisplay}</td>
+                <td data-label="Preço EUR" class="currency-cell">${formatCurrency(exp.priceEur)} EUR</td>
+                <td data-label="Anexos">
+                    <div class="attachments-list">
+                        ${(exp.attachments || []).map((att, i) => {
+                            const pagesCount = att.pages ? att.pages.length : (att.data ? 1 : 0);
+                            const pgLabel = pagesCount > 1 ? ` · ${pagesCount} págs` : '';
+                            return `
+                            <span class="file-tag">
+                                <i class="fas fa-paperclip"></i> ${att.name}${pgLabel}
+                                <i class="fas fa-times" onclick="removeAttachment(${exp.id}, ${i})" style="color:#c0392b;margin-left:4px;"></i>
+                            </span>`;
+                        }).join('')}
+                    </div>
+                </td>
+                <td data-label="Ações" class="actions-cell">
+                    <button class="btn-edit" onclick="editExpense(${exp.id})" title="Editar"><i class="fas fa-edit"></i></button>
+                    <button class="btn-camera" onclick="openCameraForExpense(${exp.id})" title="Foto"><i class="fas fa-camera"></i></button>
+                    <button class="btn-attach" onclick="attachFile(${exp.id})" title="Anexar"><i class="fas fa-paperclip"></i></button>
+                    <button class="btn-view" onclick="viewAttachments(${exp.id})" title="Ver anexos"><i class="fas fa-eye"></i></button>
+                    <button class="btn-remove" onclick="removeExpense(${exp.id})" title="Remover"><i class="fas fa-trash-alt"></i></button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+        updateTotal();
+        updateChartAndSummary();
+        updateStorageInfo();
+    }
+
+    // =====================================================
+    // CRUD
+    // =====================================================
+    function addExpense(date, category, description, amount, currency, priceEur, attachments = []) {
+        const exp = { id: nextId++, date, category, description, amount: amount || '', currency: currency || 'EUR', priceEur: parseFloat(priceEur) || 0, attachments: attachments || [] };
+        expenses.push(exp);
+        renderTable();
+    }
+
+    async function removeExpense(id) {
+        if (!confirm('Remover esta despesa?')) return;
+        const exp = expenses.find(e => e.id === id);
+        if (exp && exp.attachments) {
+            for (const att of exp.attachments) {
+                if (att.id) await idbDelete(att.id);
+            }
+        }
+        expenses = expenses.filter(e => e.id !== id);
+        renderTable();
+    }
+
+    async function removeAttachment(expId, attIndex) {
+        const exp = expenses.find(e => e.id === expId);
+        if (!exp) return;
+        const att = exp.attachments[attIndex];
+        if (att && att.id) await idbDelete(att.id);
+        exp.attachments.splice(attIndex, 1);
+        renderTable();
+    }
+
+    // =====================================================
+    // EDITAR DESPESA
+    // =====================================================
+    function editExpense(id) {
+        const exp = expenses.find(e => e.id === id);
+        if (!exp) return;
+        editingExpenseId = id;
+        document.getElementById('editDate').value = exp.date || '';
+        document.getElementById('editCategory').value = exp.category || 'Others';
+        document.getElementById('editDescription').value = exp.description || '';
+        document.getElementById('editAmount').value = exp.amount || '';
+        document.getElementById('editCurrency').value = exp.currency || 'EUR';
+        document.getElementById('editPrice').value = exp.priceEur || 0;
+        document.getElementById('modalEdit').style.display = 'flex';
+    }
+
+    function cancelEdit() {
+        editingExpenseId = null;
+        document.getElementById('modalEdit').style.display = 'none';
+    }
+
+    function saveEditedExpense() {
+        if (!editingExpenseId) return;
+        const exp = expenses.find(e => e.id === editingExpenseId);
+        if (!exp) { alert('Erro: despesa não encontrada.'); cancelEdit(); return; }
+        const editDate = document.getElementById('editDate').value;
+        const editCategory = document.getElementById('editCategory').value;
+        const editDescription = document.getElementById('editDescription').value.trim();
+        const editAmount = document.getElementById('editAmount').value.trim();
+        const editCurrency = document.getElementById('editCurrency').value;
+        const editPrice = parseFloat(document.getElementById('editPrice').value);
+        if (!editDate || !editDescription || isNaN(editPrice) || editPrice < 0) {
+            alert('Preencha data, descrição e preço válido.');
+            return;
+        }
+        exp.date = editDate;
+        exp.category = editCategory;
+        exp.description = editDescription;
+        exp.amount = editAmount;
+        exp.currency = editCurrency;
+        exp.priceEur = editPrice;
+        cancelEdit();
+        renderTable();
+    }
+
+    const editAmountEl = document.getElementById('editAmount');
+    const editCurrencyEl = document.getElementById('editCurrency');
+    const editPriceEl = document.getElementById('editPrice');
+    editAmountEl.addEventListener('blur', function() {
+        if (this.value !== '' && !isNaN(parseFloat(this.value))) this.value = parseFloat(this.value).toFixed(2);
+        if (editCurrencyEl.value === 'EUR' && this.value !== '') editPriceEl.value = parseFloat(this.value).toFixed(2);
+    });
+    editAmountEl.addEventListener('input', function() {
+        if (editCurrencyEl.value === 'EUR' && this.value !== '' && !isNaN(parseFloat(this.value))) editPriceEl.value = parseFloat(this.value).toFixed(2);
+    });
+    editCurrencyEl.addEventListener('change', function() {
+        if (this.value === 'EUR' && editAmountEl.value !== '' && !isNaN(parseFloat(editAmountEl.value))) {
+            editAmountEl.value = parseFloat(editAmountEl.value).toFixed(2);
+            editPriceEl.value = parseFloat(editAmountEl.value).toFixed(2);
+        }
+    });
+
+    // =====================================================
+    // LIMPAR TODOS
+    // =====================================================
+    async function clearAllExpenses() {
+        if (!expenses.length) { alert('Não há registos para limpar.'); return; }
+        if (confirm(`Tem certeza que deseja limpar todos os ${expenses.length} registos?`)) {
+            if (confirm('Deseja exportar os registos para Excel antes de limpar?')) { exportExcel(); }
+            for (const exp of expenses) {
+                for (const att of (exp.attachments || [])) {
+                    if (att.id) await idbDelete(att.id);
+                }
+            }
+            expenses = []; nextId = 1; renderTable(); alert('Todos os registos foram removidos!');
+        }
+    }
+
+    // =====================================================
+    // ANEXAR A DESPESA EXISTENTE
+    // =====================================================
+    async function attachFile(expId) {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.pdf,.jpg,.jpeg,.png';
+        input.onchange = async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const exp = expenses.find(exp => exp.id === expId);
+            if (!exp) return;
+            try {
+                let pages, type, originalType = null;
+
+                if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
+                    const arrayBuffer = await file.arrayBuffer();
+                    let result = { images: [], totalPages: 0, truncated: false };
+                    try { result = await convertPdfToImages(arrayBuffer); } catch (err) { console.error(err); }
+
+                    if (result.images.length > 0) {
+                        pages = [];
+                        for (const img of result.images) {
+                            pages.push(await compressImage(img, 1600, 0.75));
+                        }
+                        type = 'image/jpeg';
+                        originalType = 'pdf';
+                        if (result.truncated) {
+                            alert(`⚠️ "${file.name}" tem ${result.totalPages} páginas.\nApenas as primeiras ${MAX_PDF_PAGES} foram anexadas.`);
+                        }
+                    } else if (file.size <= 5 * 1024 * 1024) {
+                        const base64 = await new Promise((res) => {
+                            const reader = new FileReader();
+                            reader.onload = (ev) => res(ev.target.result);
+                            reader.readAsDataURL(file);
+                        });
+                        pages = [base64];
+                        type = 'application/pdf';
+                        originalType = 'pdf';
+                    } else {
+                        alert(`❌ "${file.name}" é demasiado grande (>5 MB) e não pôde ser convertido.`);
+                        return;
+                    }
+                } else {
+                    const dataUrl = await new Promise((res) => {
+                        const reader = new FileReader();
+                        reader.onload = (ev) => res(ev.target.result);
+                        reader.readAsDataURL(file);
+                    });
+                    const compressed = await compressImage(dataUrl, 1600, 0.75);
+                    pages = [compressed];
+                    type = 'image/jpeg';
+                }
+
+                const attId = generateAttachmentId();
+                await idbPut(attId, { pages, name: file.name, type, originalType });
+                exp.attachments.push({ id: attId, name: file.name, type, originalType, pages: pages.map(() => null) });
+                renderTable();
+            } catch (error) {
+                console.error('Erro ao processar anexo:', error);
+                alert('Erro ao processar o ficheiro: ' + error.message);
+            }
+        };
+        input.click();
+    }
+
+    function closeViewModal() {
+        document.getElementById('modalView').style.display = 'none';
+    }
+
+    async function viewAttachments(expId) {
+        const exp = expenses.find(e => e.id === expId);
+        if (!exp || !exp.attachments.length) { alert('Nenhum anexo.'); return; }
+        const modal = document.getElementById('modalView');
+        const body = document.getElementById('modalBody');
+        document.getElementById('modalTitle').textContent = `Anexos - ${exp.description}`;
+        body.innerHTML = '<p style="color:#888;">A carregar anexos...</p>';
+        modal.style.display = 'flex';
+        let html = '';
+        for (let i = 0; i < exp.attachments.length; i++) {
+            const att = exp.attachments[i];
+            let pages = [];
+            if (att.id) {
+                const rec = await idbGet(att.id);
+                if (rec && rec.pages) pages = rec.pages;
+                else if (rec && rec.data) pages = [rec.data];
+            }
+            if (pages.length === 0 && att.pages) pages = att.pages;
+            if (pages.length === 0 && att.data) pages = [att.data];
+
+            const isImage = att.type && att.type.startsWith('image/');
+            const pagesCount = pages.length;
+
+            html += `<div class="file-item" style="flex-direction:column; align-items:stretch;">`;
+            html += `<div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; margin-bottom:8px;">
+                        <span><i class="fas fa-file"></i> ${att.name}${pagesCount > 1 ? ` · ${pagesCount} págs` : ''}</span>
+                        <span style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                            ${pages.length ? `<a href="${pages[0]}" target="_blank" style="color:#2a7de1;">Ver/Download</a>` : '<em style="color:#999;">(não encontrado)</em>'}
+                        </span>
+                    </div>`;
+
+            if (pages.length > 0 && isImage) {
+                html += `<div style="display:flex; flex-wrap:wrap; gap:10px;">`;
+                for (let p = 0; p < pages.length; p++) {
+                    html += `
+                        <div style="display:flex; flex-direction:column; align-items:center; gap:5px;">
+                            <img src="${pages[p]}" style="max-width:180px; max-height:200px; border:1px solid #ddd; border-radius:4px;">
+                            <button onclick="event.stopPropagation(); closeViewModal(); openImageEditor(${exp.id}, ${i}, ${p})" style="padding:4px 10px; background:#8e44ad; color:white; border:none; border-radius:4px; font-size:0.7rem; font-weight:600; cursor:pointer;">
+                                <i class="fas fa-crop-alt"></i> Editar pág. ${p + 1}
+                            </button>
+                        </div>`;
+                }
+                html += `</div>`;
+            }
+            html += `</div>`;
+        }
+        body.innerHTML = html;
+    }
+
+    // =====================================================
+    // EDITOR DE IMAGENS (Cropper.js)
+    // =====================================================
+    function updateSizeLabel() {
+        const label = document.getElementById('imageSizeLabel');
+        label.textContent = outputMaxSize + 'px';
+        const select = document.getElementById('imageSizeSelect');
+        if (['500', '800', '1024', '1600'].includes(String(outputMaxSize))) {
+            select.value = String(outputMaxSize);
+        } else {
+            select.value = '';
+        }
+    }
+
+    function setOutputSize(size) {
+        outputMaxSize = parseInt(size) || 1600;
+        updateSizeLabel();
+    }
+
+    function sizeDown() {
+        outputMaxSize = Math.max(100, outputMaxSize - 100);
+        updateSizeLabel();
+    }
+
+    function sizeUp() {
+        outputMaxSize = Math.min(5000, outputMaxSize + 100);
+        updateSizeLabel();
+    }
+
+    async function openImageEditor(expId, attIndex, pageIndex = 0) {
+        const exp = expenses.find(e => e.id === expId);
+        if (!exp) return;
+        const att = exp.attachments[attIndex];
+        if (!att || !att.type || !att.type.startsWith('image/')) {
+            alert('Só é possível editar imagens.');
+            return;
+        }
+
+        let pages = [];
+        if (att.id) {
+            const rec = await idbGet(att.id);
+            if (rec && rec.pages) pages = rec.pages;
+            else if (rec && rec.data) pages = [rec.data];
+        }
+        if (pages.length === 0 && att.pages && att.pages.length) pages = att.pages.filter(p => p);
+        if (pages.length === 0 && att.data) pages = [att.data];
+        if (pages.length === 0) { alert('Imagem não encontrada.'); return; }
+
+        pageIndex = Math.min(Math.max(0, pageIndex), pages.length - 1);
+        editingAttachment = { expId, attIndex, pageIndex };
+
+        const nav = document.getElementById('imageEditorPageNav');
+        const lbl = document.getElementById('imageEditorPageLabel');
+        if (pages.length > 1) {
+            nav.style.display = 'inline-block';
+            lbl.textContent = `Página ${pageIndex + 1} / ${pages.length}`;
+        } else {
+            nav.style.display = 'none';
+        }
+
+        outputMaxSize = 1600;
+        document.getElementById('imageSizeSelect').value = '1600';
+        updateSizeLabel();
+
+        if (att.printDims) {
+            printWidthCm = att.printDims.widthCm || 18;
+            printHeightCm = att.printDims.heightCm || 27;
+        } else {
+            printWidthCm = 18;
+            printHeightCm = 27;
+        }
+        document.getElementById('printWidthCm').value = printWidthCm.toFixed(1);
+        document.getElementById('printHeightCm').value = printHeightCm.toFixed(1);
+        updatePrintSizeInfo();
+
+        const modal = document.getElementById('modalImageEditor');
+        const img = document.getElementById('imageToEdit');
+        document.getElementById('imageEditorName').textContent = att.name || '';
+        img.src = pages[pageIndex];
+        modal.style.display = 'flex';
+
+        img.onload = () => {
+            if (cropperInstance) cropperInstance.destroy();
+
+            originalImageRatio = img.naturalWidth / img.naturalHeight;
+
+            if (lockRatio && originalImageRatio > 0) {
+                printHeightCm = Math.round((printWidthCm / originalImageRatio) * 100) / 100;
+                printHeightCm = Math.min(50, Math.max(1, printHeightCm));
+                document.getElementById('printHeightCm').value = printHeightCm.toFixed(1);
+                updatePrintSizeInfo();
+            }
+
+            cropperInstance = new Cropper(img, {
+                viewMode: 1,
+                dragMode: 'move',
+                aspectRatio: NaN,
+                autoCrop: true,
+                autoCropArea: 1,
+                responsive: true,
+                restore: false,
+                guides: true,
+                center: true,
+                highlight: false,
+                cropBoxMovable: true,
+                cropBoxResizable: true,
+                toggleDragModeOnDblclick: false,
+                background: true,
+                modal: true,
+                ready: function () {
+                    this.cropper.crop();
+                    const d = this.cropper.getData();
+                    if (d.width > 0 && d.height > 0) {
+                        originalImageRatio = d.width / d.height;
+                        if (lockRatio) {
+                            printHeightCm = Math.round((printWidthCm / originalImageRatio) * 100) / 100;
+                            printHeightCm = Math.min(50, Math.max(1, printHeightCm));
+                            document.getElementById('printHeightCm').value = printHeightCm.toFixed(1);
+                            updatePrintSizeInfo();
+                        }
+                    }
+                },
+                crop: function () {
+                    const d = this.cropper.getData();
+                    if (d.width > 0 && d.height > 0) {
+                        originalImageRatio = d.width / d.height;
+                        if (lockRatio) {
+                            printHeightCm = Math.round((printWidthCm / originalImageRatio) * 100) / 100;
+                            printHeightCm = Math.min(50, Math.max(1, printHeightCm));
+                            document.getElementById('printHeightCm').value = printHeightCm.toFixed(1);
+                            updatePrintSizeInfo();
+                        }
+                    }
+                }
+            });
+        };
+    }
+
+    async function changeEditorPage(delta) {
+        if (!editingAttachment) return;
+        const exp = expenses.find(e => e.id === editingAttachment.expId);
+        if (!exp) return;
+        const att = exp.attachments[editingAttachment.attIndex];
+        if (!att) return;
+
+        let pages = [];
+        if (att.id) {
+            const rec = await idbGet(att.id);
+            if (rec && rec.pages) pages = rec.pages;
+        }
+        if (pages.length === 0 && att.pages) pages = att.pages;
+        if (pages.length <= 1) return;
+
+        const newIndex = editingAttachment.pageIndex + delta;
+        if (newIndex < 0 || newIndex >= pages.length) return;
+
+        closeImageEditor();
+        await openImageEditor(editingAttachment.expId, editingAttachment.attIndex, newIndex);
+    }
+
+    function rotateLeft() { if (cropperInstance) cropperInstance.rotate(-90); }
+    function rotateRight() { if (cropperInstance) cropperInstance.rotate(90); }
+    function zoomIn() { if (cropperInstance) cropperInstance.zoom(0.1); }
+    function zoomOut() { if (cropperInstance) cropperInstance.zoom(-0.1); }
+    function resetCrop() { if (cropperInstance) cropperInstance.reset(); }
+    function fitCrop() {
+        if (!cropperInstance) return;
+        cropperInstance.setDragMode('move');
+        cropperInstance.crop();
+    }
+
+    async function saveEditedImage() {
+        if (!cropperInstance || !editingAttachment) return;
+
+        const btn = document.getElementById('saveImageEditBtn');
+        const originalHTML = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> A guardar...';
+
+        try {
+            const canvas = cropperInstance.getCroppedCanvas({
+                maxWidth: outputMaxSize,
+                maxHeight: outputMaxSize,
+                imageSmoothingEnabled: true,
+                imageSmoothingQuality: 'high'
+            });
+
+            let dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+            dataUrl = await compressImage(dataUrl, outputMaxSize, 0.8);
+
+            const exp = expenses.find(e => e.id === editingAttachment.expId);
+            if (!exp) throw new Error('Despesa não encontrada.');
+
+            const att = exp.attachments[editingAttachment.attIndex];
+            if (!att) throw new Error('Anexo não encontrado.');
+
+            let pages = [];
+            if (att.id) {
+                const rec = await idbGet(att.id);
+                if (rec && rec.pages) pages = rec.pages.slice();
+                else if (rec && rec.data) pages = [rec.data];
+            }
+            if (pages.length === 0 && att.pages) pages = att.pages.slice();
+            if (pages.length === 0) pages = [dataUrl];
+            else pages[editingAttachment.pageIndex] = dataUrl;
+
+            const printDims = { widthCm: printWidthCm, heightCm: printHeightCm };
+
+            if (att.id) {
+                const rec = await idbGet(att.id);
+                await idbPut(att.id, {
+                    pages: pages,
+                    name: rec?.name || att.name,
+                    type: 'image/jpeg',
+                    originalType: rec?.originalType || att.originalType || null,
+                    printDims: printDims
+                });
+            } else {
+                const newId = generateAttachmentId();
+                await idbPut(newId, {
+                    pages: pages,
+                    name: att.name,
+                    type: 'image/jpeg',
+                    originalType: att.originalType || null,
+                    printDims: printDims
+                });
+                att.id = newId;
+                delete att.data;
+            }
+
+            att.type = 'image/jpeg';
+            att.printDims = printDims;
+            att.pages = pages.map(() => null);
+            renderTable();
+            closeImageEditor();
+
+            const sizeKB = Math.round(dataUrl.length * 0.75 / 1024);
+            alert(`✅ Imagem guardada!\n\nPágina ${editingAttachment.pageIndex + 1}\nPixels: máx ${outputMaxSize}px\nImpressão: ${printWidthCm.toFixed(1)} × ${printHeightCm.toFixed(1)} cm\nPeso aproximado: ${sizeKB} KB`);
+        } catch (error) {
+            console.error('Erro ao guardar imagem:', error);
+            alert('❌ Erro ao guardar a imagem: ' + error.message);
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = originalHTML;
+        }
+    }
+
+    function closeImageEditor() {
+        const modal = document.getElementById('modalImageEditor');
+        modal.style.display = 'none';
+        if (cropperInstance) {
+            cropperInstance.destroy();
+            cropperInstance = null;
+        }
+        editingAttachment = null;
+    }
+
+    document.addEventListener('keydown', (e) => {
+        const modal = document.getElementById('modalImageEditor');
+        if (modal.style.display !== 'flex') return;
+        if (e.key === 'Escape') closeImageEditor();
+        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); saveEditedImage(); }
+        if (e.key.toLowerCase() === 'r') rotateRight();
+    });
+
+    // =====================================================
+    // CÂMARA
+    // =====================================================
+    function openCameraForExpense(expId) {
+        targetExpenseIdForCamera = expId;
+        const container = document.getElementById('cameraContainer');
+        const video = document.getElementById('video');
+        container.style.display = 'flex';
+        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+            navigator.mediaDevices.getUserMedia({ video: true })
+                .then((streamObj) => { stream = streamObj; video.srcObject = streamObj; video.play(); })
+                .catch((err) => { alert('Câmera indisponível: ' + err.message); container.style.display = 'none'; });
+        } else { alert('Navegador não suporta câmera.'); container.style.display = 'none'; }
+    }
+
+    function closeCamera() {
+        if (stream) { stream.getTracks().forEach(track => track.stop()); stream = null; }
+        document.getElementById('cameraContainer').style.display = 'none';
+        document.getElementById('video').srcObject = null;
+    }
+
+    async function capturePhoto() {
+        const video = document.getElementById('video');
+        const canvas = document.createElement('canvas');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        canvas.getContext('2d').drawImage(video, 0, 0);
+        const rawDataUrl = canvas.toDataURL('image/jpeg', 0.9);
+        const dataUrl = await compressImage(rawDataUrl, 1600, 0.75);
+        const exp = expenses.find(e => e.id === targetExpenseIdForCamera);
+        if (exp) {
+            const fileName = `foto_${new Date().toISOString().slice(0,10)}_${Date.now()}.jpg`;
+            const attId = generateAttachmentId();
+            await idbPut(attId, { pages: [dataUrl], name: fileName, type: 'image/jpeg', originalType: null });
+            exp.attachments.push({ id: attId, name: fileName, type: 'image/jpeg', pages: [null] });
+            renderTable();
+            alert('Foto capturada e anexada!');
+        }
+        closeCamera();
+    }
+
+    // =====================================================
+    // MAPA
+    // =====================================================
+    function showMap() {
+        if (!expenses.length) { alert('Sem despesas.'); return; }
+        const modal = document.getElementById('modalView');
+        document.getElementById('modalTitle').textContent = 'Mapa (simulação)';
+        document.getElementById('modalBody').innerHTML = `
+            <p><i class="fas fa-map-marked-alt" style="color:#2a7de1;font-size:2rem;"></i></p>
+            <div style="background:#e8edf5;padding:20px;border-radius:8px;">
+                <strong>Total:</strong> ${expenses.length} registos<br>
+                <strong>Valor:</strong> ${formatCurrency(getTotal())} EUR<br>
+                <strong>Período:</strong> ${periodFrom.value} a ${periodTo.value}
+            </div>
+        `;
+        modal.style.display = 'flex';
+    }
+
+    // =====================================================
+    // GRÁFICO
+    // =====================================================
+    function updateChartAndSummary() {
+        const container = document.getElementById('chartContainer');
+        if (!expenses.length) { container.style.display = 'none'; return; }
+        container.style.display = 'block';
+        const catMap = {};
+        expenses.forEach(e => { catMap[e.category] = (catMap[e.category] || 0) + e.priceEur; });
+        const categories = Object.keys(catMap);
+        const values = categories.map(c => catMap[c]);
+        const days = getDaysBetween();
+        const summaryBody = document.getElementById('summaryBody');
+        summaryBody.innerHTML = '';
+        let grandTotal = 0;
+        categories.forEach((cat, i) => {
+            const tr = document.createElement('tr');
+            const avg = values[i] / days;
+            grandTotal += values[i];
+            tr.innerHTML = `<td>${cat}</td><td style="text-align:right;">${formatCurrency(values[i])}</td><td style="text-align:right;">${formatCurrency(avg)}</td>`;
+            summaryBody.appendChild(tr);
+        });
+        const trTotal = document.createElement('tr');
+        trTotal.style.fontWeight = 'bold';
+        trTotal.innerHTML = `<td>Grand Total</td><td style="text-align:right;">${formatCurrency(grandTotal)}</td><td></td>`;
+        summaryBody.appendChild(trTotal);
+        const ctx = document.getElementById('categoryChart').getContext('2d');
+        if (chartInstance) chartInstance.destroy();
+        chartInstance = new Chart(ctx, {
+            type: 'pie',
+            data: { labels: categories, datasets: [{ data: values, backgroundColor: ['#1a3a5c','#2a7de1','#27ae60','#f39c12','#e67e22','#8e44ad','#e74c3c','#1abc9c','#34495e','#95a5a6','#7f8c8d','#d35400'] }] },
+            options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
+        });
+    }
+
+    // =====================================================
+    // STORAGE INFO
+    // =====================================================
+    async function updateStorageInfo() {
+        try {
+            let total = 0;
+            for (let key in localStorage) {
+                if (localStorage.hasOwnProperty(key)) {
+                    total += (localStorage[key].length + key.length) * 2;
+                }
+            }
+            const lsKB = total / 1024;
+            document.getElementById('storageUsed').textContent = lsKB.toFixed(1) + ' KB';
+            const maxLS = 5120;
+            const pct = Math.min(100, (lsKB / maxLS) * 100);
+            const bar = document.getElementById('storageBar');
+            bar.style.width = pct + '%';
+            bar.className = 'storage-fill';
+            if (pct > 80) bar.classList.add('danger');
+            else if (pct > 60) bar.classList.add('warning');
+            const all = await idbGetAll();
+            let idbTotal = 0;
+            all.forEach(r => {
+                if (r.pages && Array.isArray(r.pages)) {
+                    r.pages.forEach(p => { if (p) idbTotal += p.length * 2; });
+                } else if (r.data) {
+                    idbTotal += r.data.length * 2;
+                }
+            });
+            document.getElementById('idbUsed').textContent = (idbTotal / 1024).toFixed(1) + ' KB';
+        } catch(e) {
+            console.error('Erro ao calcular armazenamento:', e);
+        }
+    }
+
+    // =====================================================
+    // EXCEL
+    // =====================================================
+    function exportExcel() {
+        if (!expenses.length) { alert('Sem dados.'); return false; }
+        const data = expenses.map(e => ({
+            'Data': e.date, 'Categoria': e.category, 'Descrição': e.description,
+            'Valor Original': e.amount ? `${e.amount} ${e.currency}` : '',
+            'Preço EUR': e.priceEur, 'Anexos': (e.attachments || []).map(a => a.name).join('; ')
+        }));
+        const ws = XLSX.utils.json_to_sheet(data);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'Expenses');
+        const docName = getCurrentDocName();
+        const safeName = docName.replace(/[^a-zA-Z0-9._-]/g, '_');
+        XLSX.writeFile(wb, `Expenses_${safeName}.xlsx`);
+        return true;
+    }
+
+    function importExcel(file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, { type: 'array' });
+            const sheet = workbook.Sheets[workbook.SheetNames[0]];
+            const rows = XLSX.utils.sheet_to_json(sheet);
+            if (!rows.length) { alert('Ficheiro vazio.'); return; }
+            if (!confirm(`Importar ${rows.length} registos?`)) return;
+            rows.forEach(row => {
+                const date = row['Data'] || new Date().toISOString().split('T')[0];
+                const category = row['Categoria'] || 'Others';
+                const description = row['Descrição'] || '';
+                const original = row['Valor Original'] || '';
+                let amount = '', currency = 'EUR';
+                if (original) { const parts = original.trim().split(' '); if (parts.length >= 2) { amount = parts[0]; currency = parts[parts.length - 1]; } else { amount = original; } }
+                const price = parseFloat(row['Preço EUR']) || 0;
+                addExpense(date, category, description, amount, currency, price);
+            });
+            alert('Importação concluída.');
+        };
+        reader.readAsArrayBuffer(file);
+    }
+
+    // =====================================================
+    // DOCUMENTOS (localStorage)
+    // =====================================================
+    const DOC_PREFIX = 'expenses_doc_';
+    const DOC_INDEX_KEY = 'expenses_doc_index';
+    const DOC_LAST_KEY = 'expenses_doc_last';
+    const DOC_DEFAULT = 'Documento Principal';
+
+    function listDocuments() {
+        try {
+            const index = localStorage.getItem(DOC_INDEX_KEY);
+            const docs = index ? JSON.parse(index) : [DOC_DEFAULT];
+
+            // 1º critério: alfabético decrescente (Z → A), case-insensitive
+            // 2º critério: data da última gravação (mais recente primeiro)
+            return docs.slice().sort((a, b) => {
+                const cmp = b.localeCompare(a, 'pt', { sensitivity: 'base' });
+                if (cmp !== 0) return cmp;
+
+                const rawA = localStorage.getItem(DOC_PREFIX + a);
+                const rawB = localStorage.getItem(DOC_PREFIX + b);
+                let dataA = 0, dataB = 0;
+                try { if (rawA) dataA = new Date(JSON.parse(rawA).savedAt || 0).getTime() || 0; } catch (e) {}
+                try { if (rawB) dataB = new Date(JSON.parse(rawB).savedAt || 0).getTime() || 0; } catch (e) {}
+
+                return dataB - dataA;
+            });
+        } catch (e) { return [DOC_DEFAULT]; }
+    }
+
+    function saveDocIndex(docs) { localStorage.setItem(DOC_INDEX_KEY, JSON.stringify(docs)); }
+    function getCurrentDocName() { return localStorage.getItem(DOC_LAST_KEY) || DOC_DEFAULT; }
+    function setCurrentDocName(name) { localStorage.setItem(DOC_LAST_KEY, name); }
+
+    async function saveCurrentDocument(silent = false) {
+        try {
+            const docName = getCurrentDocName();
+            const dataToSave = {
+                expenses: expenses,
+                nextId: nextId,
+                company: {
+                    userName: document.getElementById('userName').value,
+                    company: document.getElementById('company').value,
+                    nif: document.getElementById('nif').value,
+                    address: document.getElementById('address').value,
+                    contact: document.getElementById('contact').value,
+                    logo: companyLogo
+                },
+                header: {
+                    month: monthInput.value,
+                    periodFrom: periodFrom.value,
+                    periodTo: periodTo.value,
+                    reference: referenceInput.value,
+                    resume: resumeInput.value
+                },
+                savedAt: new Date().toISOString(),
+                docName: docName,
+                version: 3
+            };
+            localStorage.setItem(DOC_PREFIX + docName, JSON.stringify(dataToSave));
+            if (!silent) alert(`✅ Documento "${docName}" gravado!\n\n${expenses.length} despesas guardadas.`);
+            updateStorageInfo();
+            return true;
+        } catch (error) {
+            console.error('Erro ao gravar:', error);
+            if (!silent) alert('❌ Erro ao gravar: ' + error.message);
+            return false;
+        }
+    }
+
+    async function loadDocument(docName, silent = false) {
+        try {
+            const raw = localStorage.getItem(DOC_PREFIX + docName);
+            if (!raw) {
+                expenses = []; nextId = 1;
+                resetFormFields();
+                renderTable();
+                if (!silent) alert(`📄 Documento "${docName}" criado (vazio).`);
+                return true;
+            }
+            const data = JSON.parse(raw);
+            expenses = data.expenses || [];
+            nextId = data.nextId || (expenses.length > 0 ? Math.max(...expenses.map(e => e.id)) + 1 : 1);
+
+            if (!data.version || data.version < 2) {
+                let migratedCount = 0;
+                for (const exp of expenses) {
+                    for (const att of (exp.attachments || [])) {
+                        if (att.data && !att.id) {
+                            const newId = generateAttachmentId();
+                            await idbPut(newId, { pages: [att.data], name: att.name, type: att.type, originalType: att.originalType || null });
+                            att.id = newId;
+                            delete att.data;
+                            migratedCount++;
+                        }
+                    }
+                }
+                if (migratedCount > 0) {
+                    console.log(`Migrados ${migratedCount} anexos para IndexedDB.`);
+                }
+            }
+
+            if (!data.version || data.version < 3) {
+                for (const exp of expenses) {
+                    for (const att of (exp.attachments || [])) {
+                        if (att.pages === undefined && att.data) {
+                            att.pages = [att.data];
+                            delete att.data;
+                        } else if (att.pages === undefined) {
+                            if (att.id) {
+                                const rec = await idbGet(att.id);
+                                if (rec && rec.data && !rec.pages) {
+                                    await idbPut(att.id, { pages: [rec.data], name: rec.name, type: rec.type, originalType: rec.originalType, printDims: rec.printDims });
+                                }
+                            }
+                            att.pages = [null];
+                        }
+                    }
+                }
+            }
+
+            for (const exp of expenses) {
+                for (const att of (exp.attachments || [])) {
+                    if (!att.pages || att.pages.length === 0) {
+                        if (att.id) {
+                            const rec = await idbGet(att.id);
+                            if (rec && rec.pages) att.pages = rec.pages.map(() => null);
+                            else if (rec && rec.data) att.pages = [null];
+                        }
+                    }
+                }
+            }
+
+            if (data.company) {
+                document.getElementById('userName').value = data.company.userName || '';
+                document.getElementById('company').value = data.company.company || '';
+                document.getElementById('nif').value = data.company.nif || '';
+                document.getElementById('address').value = data.company.address || '';
+                document.getElementById('contact').value = data.company.contact || '';
+                if (data.company.logo) {
+                    companyLogo = data.company.logo;
+                    document.getElementById('logoImage').src = companyLogo;
+                    document.getElementById('logoImage').style.display = 'block';
+                    document.getElementById('logoPlaceholder').style.display = 'none';
+                } else {
+                    companyLogo = null;
+                    document.getElementById('logoImage').style.display = 'none';
+                    document.getElementById('logoImage').src = '';
+                    document.getElementById('logoPlaceholder').style.display = 'block';
+                }
+            }
+            if (data.header) {
+                monthInput.value = data.header.month || '';
+                periodFrom.value = data.header.periodFrom || '';
+                periodTo.value = data.header.periodTo || '';
+                referenceInput.value = data.header.reference || '';
+                resumeInput.value = data.header.resume || '';
+                resumeInput.style.height = 'auto';
+                resumeInput.style.height = Math.max(100, resumeInput.scrollHeight) + 'px';
+            }
+            renderTable();
+            if (!silent) console.log(`Documento "${docName}" carregado.`);
+            return true;
+        } catch (error) {
+            console.error('Erro ao carregar:', error);
+            if (!silent) alert('❌ Erro ao carregar: ' + error.message);
+            return false;
+        }
+    }
+
+    function resetFormFields() {
+        document.getElementById('userName').value = '';
+        document.getElementById('company').value = '';
+        document.getElementById('nif').value = '';
+        document.getElementById('address').value = '';
+        document.getElementById('contact').value = '';
+        monthInput.value = '';
+        periodFrom.value = '';
+        periodTo.value = '';
+        referenceInput.value = '';
+        resumeInput.value = '';
+        resumeInput.style.height = '100px';
+        companyLogo = null;
+        document.getElementById('logoImage').style.display = 'none';
+        document.getElementById('logoImage').src = '';
+        document.getElementById('logoPlaceholder').style.display = 'block';
+    }
+
+    function refreshDocSelector() {
+        const selector = document.getElementById('docSelector');
+        const docs = listDocuments();
+        const current = getCurrentDocName();
+        selector.innerHTML = '';
+        docs.forEach(doc => {
+            const opt = document.createElement('option');
+            opt.value = doc;
+            opt.textContent = doc;
+            if (doc === current) opt.selected = true;
+            selector.appendChild(opt);
+        });
+    }
+
+    async function newDocument() {
+        const name = prompt('Nome do novo documento:', 'Trip ' + new Date().toLocaleDateString('pt-PT'));
+        if (!name) return;
+        const cleanName = name.trim();
+        if (!cleanName) return;
+        const docs = listDocuments();
+        if (docs.includes(cleanName)) {
+            if (!confirm(`Já existe "${cleanName}". Abrir?`)) return;
+            await switchToDocument(cleanName);
+            return;
+        }
+        await saveCurrentDocument(true);
+        docs.push(cleanName);
+        saveDocIndex(docs);
+        setCurrentDocName(cleanName);
+        expenses = []; nextId = 1;
+        resetFormFields();
+        renderTable();
+        refreshDocSelector();
+        await saveCurrentDocument(true);
+        alert(`✅ Documento "${cleanName}" criado!`);
+    }
+
+    async function switchToDocument(name) {
+        await saveCurrentDocument(true);
+        setCurrentDocName(name);
+        await loadDocument(name, true);
+        refreshDocSelector();
+    }
+
+    async function saveAsDocument() {
+        const currentName = getCurrentDocName();
+        const name = prompt(`Nome do novo documento (cópia de "${currentName}"):`, currentName + ' (cópia)');
+        if (!name) return;
+        const cleanName = name.trim();
+        if (!cleanName) return;
+        const docs = listDocuments();
+        if (docs.includes(cleanName)) {
+            if (!confirm(`Já existe "${cleanName}". Substituir?`)) return;
+        } else {
+            docs.push(cleanName);
+            saveDocIndex(docs);
+        }
+        setCurrentDocName(cleanName);
+        await saveCurrentDocument(true);
+        refreshDocSelector();
+        alert(`✅ Documento gravado como "${cleanName}"!`);
+    }
+
+    async function renameDocument() {
+        const oldName = getCurrentDocName();
+        const name = prompt(`Novo nome para "${oldName}":`, oldName);
+        if (!name) return;
+        const cleanName = name.trim();
+        if (!cleanName || cleanName === oldName) return;
+        const docs = listDocuments();
+        if (docs.includes(cleanName)) { alert('Já existe esse nome.'); return; }
+        const raw = localStorage.getItem(DOC_PREFIX + oldName);
+        if (raw) {
+            localStorage.setItem(DOC_PREFIX + cleanName, raw);
+            localStorage.removeItem(DOC_PREFIX + oldName);
+        }
+        const idx = docs.indexOf(oldName);
+        if (idx >= 0) docs[idx] = cleanName;
+        saveDocIndex(docs);
+        setCurrentDocName(cleanName);
+        refreshDocSelector();
+        alert(`✅ Renomeado para "${cleanName}"!`);
+    }
+
+    async function deleteDocument() {
+        const name = getCurrentDocName();
+        const docs = listDocuments();
+        if (docs.length <= 1) { alert('⚠️ Não é possível apagar o único documento.'); return; }
+        if (!confirm(`⚠️ Apagar "${name}"?\n\nEsta ação não pode ser desfeita!`)) return;
+        localStorage.removeItem(DOC_PREFIX + name);
+        const newDocs = docs.filter(d => d !== name);
+        saveDocIndex(newDocs);
+        setCurrentDocName(newDocs[0]);
+        await loadDocument(newDocs[0], true);
+        refreshDocSelector();
+        alert(`✅ Documento "${name}" apagado.`);
+    }
+
+    async function autoLoadOnStart() {
+        const docs = listDocuments();
+        let currentName = getCurrentDocName();
+        if (!docs.includes(currentName)) {
+            currentName = docs[0];
+            setCurrentDocName(currentName);
+        }
+        await loadDocument(currentName, true);
+        refreshDocSelector();
+        updateStorageInfo();
+        console.log(`📄 Documento ativo: "${currentName}"`);
+    }
+
+    // =====================================================
+    // PDF
+    // =====================================================
+    async function printPdf() {
+        if (!expenses.length) { alert('Sem despesas.'); return; }
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF('p', 'pt', 'a4');
+        const pageWidth = doc.internal.pageSize.width;
+        const pageHeight = doc.internal.pageSize.height;
+        const margin = 36;
+        const primaryColor = [26, 58, 92];
+        const secondaryColor = [52, 73, 94];
+
+        function getCompanyData() {
+            return {
+                userName: (document.getElementById('userName').value || '').trim(),
+                company: (document.getElementById('company').value || '').trim(),
+                nif: (document.getElementById('nif').value || '').trim(),
+                address: (document.getElementById('address').value || '').trim(),
+                contact: (document.getElementById('contact').value || '').trim(),
+                logo: companyLogo
+            };
+        }
+
+        function drawHeader() {
+            const currentY = margin;
+            let logoWidth = 0;
+            const companyData = getCompanyData();
+            if (companyData.logo) {
+                try { doc.addImage(companyData.logo, 'JPEG', margin, currentY, 60, 40); logoWidth = 75; } catch(e) {}
+            }
+            const nameX = margin + logoWidth;
+            doc.setFontSize(13); doc.setTextColor(...primaryColor); doc.setFont('helvetica', 'bold');
+            doc.text(companyData.userName || '', nameX, currentY + 10);
+            doc.setFontSize(11); doc.setFont('helvetica', 'normal'); doc.setTextColor(...secondaryColor);
+            doc.text(companyData.address || '', nameX, currentY + 28);
+            doc.setFontSize(10); doc.text(`${companyData.nif || ''}`, nameX, currentY + 42);
+            const companyEndY = currentY + 56;
+            doc.setDrawColor(200, 200, 200); doc.line(margin, companyEndY, pageWidth - margin, companyEndY);
+            const refStartY = companyEndY + 12;
+            const rightX = pageWidth - margin;
+            const line1Y = refStartY;
+            doc.setFontSize(12); doc.setFont('helvetica', 'bold'); doc.setTextColor(...primaryColor);
+            let monthName = 'September';
+            let yearValue = new Date().getFullYear();
+            if (monthInput.value) {
+                const parts = monthInput.value.split('-');
+                yearValue = parts[0];
+                const monthIndex = parseInt(parts[1]) - 1;
+                const monthNamesEN = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+                monthName = monthNamesEN[monthIndex] || 'September';
+            }
+            doc.text(`${monthName} ${yearValue}`, rightX, line1Y, { align: 'right' });
+            doc.setFontSize(10); doc.setFont('helvetica', 'bold'); doc.setTextColor(0);
+            doc.text(`Reference: ${referenceInput.value || ''}`, margin, line1Y);
+            const line2Y = line1Y + 18;
+            doc.setFontSize(10); doc.setFont('helvetica', 'normal'); doc.setTextColor(0);
+            const from = periodFrom.value ? formatDateShort(periodFrom.value) : '';
+            const to = periodTo.value ? formatDateShort(periodTo.value) : '';
+            doc.text(`From: ${from} - To: ${to}`, rightX, line2Y, { align: 'right' });
+            doc.setFont('helvetica', 'bold'); doc.setTextColor(0); doc.text('Resume:', margin, line2Y);
+            const resumeText = resumeInput.value || '';
+            const maxWidth = pageWidth - margin - 200;
+            const splitResume = doc.splitTextToSize(resumeText, maxWidth);
+            let currentLineY = line2Y + 14;
+            doc.setFont('helvetica', 'normal');
+            splitResume.forEach((line) => { doc.text(line, margin, currentLineY); currentLineY += 14; });
+            const finalLineY = currentLineY + 4;
+            doc.setDrawColor(200, 200, 200);
+            doc.line(margin, finalLineY, pageWidth - margin, finalLineY);
+            return finalLineY + 10;
+        }
+
+        function drawFooter(pageNumber, totalPages) {
+            const footerY = pageHeight - 40;
+            doc.setDrawColor(200, 200, 200);
+            doc.line(margin, footerY - 5, pageWidth - margin, footerY - 5);
+            doc.setFontSize(8); doc.setTextColor(100); doc.setFont('helvetica', 'normal');
+            const companyData = getCompanyData();
+            doc.text(companyData.company || '', margin, footerY + 5);
+            doc.text(companyData.contact || '', margin, footerY + 20);
+            doc.text(`Page ${pageNumber} of ${totalPages}`, pageWidth - margin, footerY + 20, { align: 'right' });
+        }
+
+        function calculateHeaderHeight() {
+            const tempDoc = new jsPDF('p', 'pt', 'a4');
+            const tempMargin = 36;
+            let tempY = tempMargin;
+            tempY += 10; tempY += 28; tempY += 14;
+            const companyEndY = tempY + 10;
+            tempY = companyEndY + 12;
+            tempY += 18; tempY += 18;
+            const resumeText = resumeInput.value || '';
+            const maxWidth = tempDoc.internal.pageSize.width - tempMargin - 200;
+            const splitResume = tempDoc.splitTextToSize(resumeText, maxWidth);
+            tempY += 14;
+            tempY += (splitResume.length - 1) * 14;
+            tempY += 4;
+            return tempY + 10;
+        }
+
+        function drawBarChart(startY) {
+            const catMap = {};
+            expenses.forEach(e => { catMap[e.category] = (catMap[e.category] || 0) + e.priceEur; });
+            const cats = Object.keys(catMap);
+            const vals = cats.map(c => catMap[c]);
+            const grandTotal = vals.reduce((a, b) => a + b, 0);
+            if (grandTotal === 0 || cats.length === 0) return startY + 40;
+            const maxWidth = pageWidth - (margin * 2);
+            const chartWidth = Math.min(maxWidth * 0.75, 450);
+            const chartHeight = 180;
+            const startX = (pageWidth - chartWidth) / 2;
+            const maxVal = Math.max(...vals);
+            const barWidth = Math.min(35, (chartWidth - (cats.length * 5)) / cats.length);
+            const spacing = (chartWidth - (barWidth * cats.length)) / (cats.length + 1);
+            const chartHeightBars = chartHeight * 0.75;
+            const bottomY = startY + chartHeight;
+            const colors = ['#1a3a5c', '#2a7de1', '#27ae60', '#f39c12', '#e67e22', '#8e44ad', '#e74c3c', '#1abc9c', '#34495e', '#95a5a6', '#7f8c8d', '#d35400'];
+            cats.forEach((cat, i) => {
+                const barHeight = (vals[i] / maxVal) * chartHeightBars;
+                const x = startX + spacing + (i * (barWidth + spacing));
+                const y = bottomY - barHeight;
+                doc.setFillColor(colors[i % colors.length]);
+                doc.rect(x, y, barWidth, barHeight, 'F');
+                doc.setFontSize(7); doc.setTextColor(0);
+                doc.text(formatCurrency(vals[i]), x + barWidth/2, y - 4, { align: 'center' });
+                doc.setFontSize(6); doc.setTextColor(80);
+                const catName = cat.length > 10 ? cat.substring(0, 8) + '..' : cat;
+                doc.text(catName, x + barWidth/2, bottomY + 10, { align: 'center' });
+            });
+            doc.setFontSize(11); doc.setTextColor(...primaryColor); doc.setFont('helvetica', 'bold');
+            doc.text('Distribution of Expenses by Category', pageWidth/2, startY - 5, { align: 'center' });
+            return bottomY + 35;
+        }
+
+        function drawSummaryTable(startY) {
+            const catMap = {};
+            expenses.forEach(e => { catMap[e.category] = (catMap[e.category] || 0) + e.priceEur; });
+            const cats = Object.keys(catMap);
+            const vals = cats.map(c => catMap[c]);
+            const days = getDaysBetween();
+            const grandTotal = vals.reduce((a, b) => a + b, 0);
+            if (cats.length === 0) return startY;
+            doc.setFontSize(11); doc.setTextColor(...primaryColor); doc.setFont('helvetica', 'bold');
+            doc.text('Summary by Category', pageWidth/2, startY, { align: 'center' });
+            const tableStartY = startY + 12;
+            doc.setFontSize(8); doc.setFont('helvetica', 'bold'); doc.setTextColor(0);
+            const col1X = pageWidth/2 - 140, col2X = pageWidth/2 - 40, col3X = pageWidth/2 + 60;
+            doc.text('Category', col1X, tableStartY);
+            doc.text('Sum EUR', col2X, tableStartY);
+            doc.text('Average by Day', col3X, tableStartY);
+            doc.setDrawColor(200, 200, 200);
+            doc.line(col1X - 5, tableStartY + 3, col3X + 60, tableStartY + 3);
+            let yy = tableStartY + 12;
+            doc.setFont('helvetica', 'normal'); doc.setTextColor(0);
+            const sortedIndices = cats.map((_, i) => i).sort((a, b) => vals[b] - vals[a]);
+            sortedIndices.forEach((i) => {
+                const avg = vals[i] / days;
+                doc.text(cats[i], col1X, yy);
+                doc.text(formatCurrency(vals[i]), col2X, yy);
+                doc.text(formatCurrency(avg), col3X, yy);
+                yy += 10;
+            });
+            doc.setDrawColor(200, 200, 200);
+            doc.line(col1X - 5, yy - 2, col3X + 60, yy - 2);
+            doc.setFont('helvetica', 'bold');
+            doc.text('Grand Total', col1X, yy + 6);
+            doc.text(formatCurrency(grandTotal), col2X, yy + 6);
+            return yy + 20;
+        }
+
+        const headerHeight = calculateHeaderHeight();
+        const contentStartY = headerHeight + 5;
+        doc.setFontSize(13); doc.setFont('helvetica', 'bold'); doc.setTextColor(...primaryColor);
+        doc.text(`Grand Total: ${formatCurrency(getTotal())} EUR`, pageWidth - margin, contentStartY, { align: 'right' });
+        const grandTotalEndY = contentStartY + 18;
+        const tableRows = expenses.map((e, idx) => [
+            idx+1, formatDate(e.date), e.category, e.description,
+            e.amount && e.currency ? `${formatCurrency(e.amount)} ${e.currency}` : '-',
+            `${formatCurrency(e.priceEur)} EUR`
+        ]);
+        doc.autoTable({
+            head: [
+                [
+                    { content: '#', rowSpan: 2, styles: { valign: 'middle', halign: 'center' } },
+                    { content: 'Date', rowSpan: 2, styles: { valign: 'middle' } },
+                    { content: 'Category', rowSpan: 2, styles: { valign: 'middle' } },
+                    { content: 'Description', rowSpan: 2, styles: { valign: 'middle' } },
+                    { content: 'Currency', colSpan: 2, styles: { halign: 'center' } },
+                ],
+                [
+                    { content: 'Original', styles: { halign: 'center' } },
+                    { content: 'Euro', styles: { halign: 'center' } }
+                ]
+            ],
+            body: tableRows,
+            startY: grandTotalEndY,
+            margin: { top: contentStartY - 10, bottom: 60, left: margin, right: margin },
+            styles: { fontSize: 9, cellPadding: 5 },
+            headStyles: { fillColor: primaryColor, textColor: [255, 255, 255], fontSize: 9, fontStyle: 'bold' },
+            columnStyles: {
+                0: { cellWidth: 22, halign: 'center' },
+                1: { cellWidth: 60, halign: 'left' },
+                2: { cellWidth: 80, halign: 'left' },
+                3: { cellWidth: 'auto', halign: 'left' },
+                4: { cellWidth: 95, halign: 'right' },
+                5: { cellWidth: 75, halign: 'right' }
+            },
+            tableWidth: 'auto',
+            didDrawPage: function(data) { drawHeader(); },
+        });
+
+        doc.addPage();
+        drawHeader();
+        let currentY = contentStartY + 10;
+        currentY = drawBarChart(currentY);
+        currentY = drawSummaryTable(currentY);
+
+        const allAttachments = [];
+        for (const e of expenses) {
+            for (const a of (e.attachments || [])) {
+                let pages = [];
+                if (a.id) {
+                    const rec = await idbGet(a.id);
+                    if (rec && rec.pages) pages = rec.pages;
+                    else if (rec && rec.data) pages = [rec.data];
+                }
+                if (pages.length === 0 && a.pages) pages = a.pages.filter(p => p);
+                if (pages.length === 0 && a.data) pages = [a.data];
+                if (pages.length > 0) {
+                    allAttachments.push({
+                        date: e.date, category: e.category, description: e.description,
+                        name: a.name,
+                        pages: pages,
+                        type: (a.originalType === 'pdf') ? 'image/jpeg' : a.type,
+                        originalType: a.originalType || null,
+                        printDims: a.printDims || null
+                    });
+                }
+            }
+        }
+
+        if (allAttachments.length) {
+            allAttachments.sort((a, b) => a.date.localeCompare(b.date));
+            for (let idx = 0; idx < allAttachments.length; idx++) {
+                const att = allAttachments[idx];
+                const totalPgs = att.pages.length;
+
+                for (let p = 0; p < totalPgs; p++) {
+                    doc.addPage();
+                    const headerEndY = drawHeader();
+                    const usableTop = headerEndY + 15;
+                    const usableBottom = pageHeight - 55;
+                    const usableWidth = pageWidth - margin * 2 - 20;
+
+                    const pageLabel = totalPgs > 1 ? ` (${p + 1}/${totalPgs})` : '';
+                    const legendText = `${idx + 1}${pageLabel} | ${formatDate(att.date)} | ${att.category} | ${att.description}`;
+                    const imgData = att.pages[p];
+
+                    if (att.type === 'application/pdf') {
+                        doc.setFontSize(11); doc.setTextColor(...primaryColor); doc.setFont('helvetica', 'bold');
+                        doc.text(`${idx + 1}${pageLabel} | Anexo PDF (não convertido)`, margin, usableTop);
+
+                        doc.setFontSize(10); doc.setTextColor(0); doc.setFont('helvetica', 'normal');
+                        const info =
+                            `Ficheiro: ${att.name}\n` +
+                            `Data: ${formatDate(att.date)}\n` +
+                            `Categoria: ${att.category}\n` +
+                            `Descrição: ${att.description}\n\n` +
+                            `Este PDF não pôde ser convertido em imagem. Consulte o ficheiro original ` +
+                            `no sistema (botão "Ver anexos") para o visualizar.`;
+                        const lines = doc.splitTextToSize(info, usableWidth);
+                        let yy = usableTop + 25;
+                        lines.forEach((line) => { doc.text(line, margin, yy); yy += 14; });
+                        doc.setDrawColor(200, 200, 200);
+                        doc.rect(margin, usableTop + 8, usableWidth, yy - usableTop + 10);
+                        continue;
+                    }
+
+                    if (att.type && att.type.startsWith('image/')) {
+                        try {
+                            doc.setFontSize(10); doc.setTextColor(...primaryColor); doc.setFont('helvetica', 'bold');
+                            const legendMaxWidth = pageWidth - margin * 2;
+                            const legendLines = doc.splitTextToSize(legendText, legendMaxWidth);
+                            let legendY = usableTop;
+                            legendLines.forEach((line) => {
+                                doc.text(line, margin, legendY);
+                                legendY += 13;
+                            });
+                            const imgStartY = legendY + 4;
+                            const maxImgHeight = usableBottom - imgStartY - 5;
+
+                            let naturalW = 0, naturalH = 0;
+                            await new Promise((resolve) => {
+                                const tmp = new Image();
+                                tmp.onload = function() { naturalW = this.naturalWidth; naturalH = this.naturalHeight; resolve(); };
+                                tmp.onerror = function() { resolve(); };
+                                tmp.src = imgData;
+                            });
+
+                            const CM_TO_PT = 28.3465;
+                            let finalWidth, finalHeight;
+
+                            if (att.printDims && att.printDims.widthCm && att.printDims.heightCm) {
+                                finalWidth  = att.printDims.widthCm  * CM_TO_PT;
+                                finalHeight = att.printDims.heightCm * CM_TO_PT;
+                            } else {
+                                if (naturalW > 0 && naturalH > 0) {
+                                    const ratioImg = naturalW / naturalH;
+                                    const ratioArea = usableWidth / maxImgHeight;
+                                    if (ratioImg > ratioArea) {
+                                        finalWidth = usableWidth;
+                                        finalHeight = usableWidth / ratioImg;
+                                    } else {
+                                        finalHeight = maxImgHeight;
+                                        finalWidth = maxImgHeight * ratioImg;
+                                    }
+                                } else {
+                                    finalWidth = usableWidth;
+                                    finalHeight = usableWidth / 1.333;
+                                }
+                            }
+
+                            const sW = usableWidth / finalWidth;
+                            const sH = maxImgHeight / finalHeight;
+                            const s = Math.min(1, sW, sH);
+                            finalWidth  *= s;
+                            finalHeight *= s;
+
+                            const x = (pageWidth - finalWidth) / 2;
+                            const y = imgStartY;
+
+                            let imgFormat = 'JPEG';
+                            if (imgData.startsWith('data:image/png')) imgFormat = 'PNG';
+
+                            doc.addImage(imgData, imgFormat, x, y, finalWidth, finalHeight, undefined, 'FAST');
+                        } catch(e) {
+                            console.error('Erro anexo:', e);
+                        }
+                    }
+                }
+            }
+        }
+
+        const realTotalPages = doc.internal.getNumberOfPages();
+        for (let i = 1; i <= realTotalPages; i++) {
+            doc.setPage(i);
+            const footerY = pageHeight - 40;
+            doc.setFillColor(255, 255, 255);
+            doc.rect(0, footerY - 10, pageWidth, 55, 'F');
+            drawFooter(i, realTotalPages);
+        }
+
+        const pdfBlob = doc.output('blob');
+        const pdfUrl = URL.createObjectURL(pdfBlob);
+        const modal = document.getElementById('modalView');
+        document.getElementById('modalTitle').textContent = 'Visualização do PDF';
+        const body = document.getElementById('modalBody');
+        body.innerHTML = `
+            <div style="display:flex; gap:10px; margin-bottom:10px; flex-wrap:wrap;">
+                <button onclick="window.open('${pdfUrl}', '_blank')" style="padding:10px 20px; background:#2a7de1; color:white; border:none; border-radius:6px; cursor:pointer;"><i class="fas fa-external-link-alt"></i> Abrir em nova aba</button>
+                <button onclick="downloadPdfFromBlob('${pdfUrl}')" style="padding:10px 20px; background:#27ae60; color:white; border:none; border-radius:6px; cursor:pointer;"><i class="fas fa-download"></i> Baixar PDF</button>
+            </div>
+            <div class="pdf-container"><iframe src="${pdfUrl}" style="width:100%; height:500px; border:none; border-radius:6px;"></iframe></div>
+        `;
+        modal.style.display = 'flex';
+        window._pdfUrl = pdfUrl;
+    }
+
+    function downloadPdfFromBlob(url) {
+        const link = document.createElement('a');
+        link.href = url;
+        const docName = getCurrentDocName().replace(/[^a-zA-Z0-9._-]/g, '_');
+        link.download = `Expenses_${docName}.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    // =====================================================
+    // EVENTOS
+    // =====================================================
+    addBtn.addEventListener('click', () => {
+        const date = newDate.value;
+        const category = newCategory.value;
+        const description = newDescription.value.trim();
+        const amount = newAmount.value.trim();
+        const currency = newCurrency.value;
+        const price = parseFloat(newPrice.value);
+        if (!date || !description || isNaN(price) || price < 0) { alert('Preencha data, descrição e preço.'); return; }
+        if (!category) { alert('Selecione uma categoria.'); return; }
+        const attsToAdd = [];
+        (async () => {
+            for (const att of pendingAttachments) {
+                const attId = generateAttachmentId();
+                await idbPut(attId, { pages: att.pages, name: att.name, type: att.type, originalType: att.originalType || null });
+                attsToAdd.push({ id: attId, name: att.name, type: att.type, originalType: att.originalType || null, pages: att.pages.map(() => null) });
+            }
+            addExpense(date, category, description, amount, currency, price, attsToAdd);
+            newDescription.value = '';
+            newAmount.value = '';
+            newPrice.value = '';
+            newCategory.value = '';
+            newDate.value = '';
+            clearPendingAttachments();
+        })();
+    });
+
+    document.getElementById('pendingAttachBtn').addEventListener('click', addPendingAttachment);
+    document.getElementById('saveDataBtn').addEventListener('click', () => saveCurrentDocument(false));
+    document.getElementById('newDocBtn').addEventListener('click', newDocument);
+    document.getElementById('saveAsBtn').addEventListener('click', saveAsDocument);
+    document.getElementById('renameDocBtn').addEventListener('click', renameDocument);
+    document.getElementById('deleteDocBtn').addEventListener('click', deleteDocument);
+    document.getElementById('docSelector').addEventListener('change', (e) => switchToDocument(e.target.value));
+    document.getElementById('clearAllBtn').addEventListener('click', clearAllExpenses);
+    document.getElementById('mapBtn').addEventListener('click', showMap);
+    document.getElementById('saveExcelBtn').addEventListener('click', exportExcel);
+    document.getElementById('importExcelBtn').addEventListener('click', () => { document.getElementById('importFileInput').click(); });
+    document.getElementById('importFileInput').addEventListener('change', (e) => { if (e.target.files.length) { importExcel(e.target.files[0]); e.target.value = ''; } });
+    document.getElementById('printPdfBtn').addEventListener('click', printPdf);
+
+    document.getElementById('cameraBtn').addEventListener('click', () => {
+        if (!expenses.length) { alert('Adicione uma despesa primeiro.'); return; }
+        const lastExp = expenses[expenses.length - 1];
+        openCameraForExpense(lastExp.id);
+    });
+    document.getElementById('captureBtn').addEventListener('click', capturePhoto);
+    document.getElementById('closeCamBtn').addEventListener('click', closeCamera);
+
+    document.getElementById('modalClose').addEventListener('click', () => {
+        document.getElementById('modalView').style.display = 'none';
+        if (window._pdfUrl) { URL.revokeObjectURL(window._pdfUrl); window._pdfUrl = null; }
+    });
+    window.addEventListener('click', (e) => {
+        if (e.target === document.getElementById('modalView')) {
+            document.getElementById('modalView').style.display = 'none';
+            if (window._pdfUrl) { URL.revokeObjectURL(window._pdfUrl); window._pdfUrl = null; }
+        }
+        if (e.target === document.getElementById('modalEdit')) cancelEdit();
+    });
+
+    document.getElementById('modalEditClose').addEventListener('click', cancelEdit);
+
+    document.getElementById('rotateLeftBtn').addEventListener('click', rotateLeft);
+    document.getElementById('rotateRightBtn').addEventListener('click', rotateRight);
+    document.getElementById('zoomInBtn').addEventListener('click', zoomIn);
+    document.getElementById('zoomOutBtn').addEventListener('click', zoomOut);
+    document.getElementById('resetCropBtn').addEventListener('click', resetCrop);
+    document.getElementById('fitCropBtn').addEventListener('click', fitCrop);
+    document.getElementById('saveImageEditBtn').addEventListener('click', saveEditedImage);
+    document.getElementById('cancelImageEditBtn').addEventListener('click', closeImageEditor);
+    document.getElementById('imageEditorClose').addEventListener('click', closeImageEditor);
+    document.getElementById('prevPageBtn').addEventListener('click', () => changeEditorPage(-1));
+    document.getElementById('nextPageBtn').addEventListener('click', () => changeEditorPage(1));
+    window.addEventListener('click', (e) => {
+        if (e.target === document.getElementById('modalImageEditor')) closeImageEditor();
+    });
+
+    document.getElementById('printWidthCm').addEventListener('input', (e) => setPrintWidth(e.target.value));
+    document.getElementById('printHeightCm').addEventListener('input', (e) => setPrintHeight(e.target.value));
+    document.getElementById('printWidthCm').addEventListener('change', (e) => setPrintWidth(e.target.value));
+    document.getElementById('printHeightCm').addEventListener('change', (e) => setPrintHeight(e.target.value));
+    document.getElementById('lockRatioBtn').addEventListener('click', toggleLockRatio);
+    document.getElementById('resetPrintSizeBtn').addEventListener('click', resetPrintSize);
+
+    document.getElementById('imageSizeSelect').addEventListener('change', (e) => setOutputSize(e.target.value));
+    document.getElementById('sizeDownBtn').addEventListener('click', sizeDown);
+    document.getElementById('sizeUpBtn').addEventListener('click', sizeUp);
+
+    document.getElementById('openFileBtn').addEventListener('click', openFileFromDisk);
+    document.getElementById('saveFileBtn').addEventListener('click', saveToFile);
+    document.getElementById('saveFileAsBtn').addEventListener('click', saveToFileAs);
+
+    document.addEventListener('keydown', (e) => {
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+            const modal = document.getElementById('modalImageEditor');
+            if (modal.style.display === 'flex') return;
+            e.preventDefault();
+            saveToFile();
+        }
+    });
+
+    // =====================================================
+    // INIT
+    // =====================================================
+    (async () => {
+        await openDB();
+        renderTable();
+        await autoLoadOnStart();
+        setFileLabel(null, 'ℹ️ modo de download (compatível com ambientes restritos)');
+    })();
+
+    // =====================================================
+    // PWA — registo do service worker
+    // =====================================================
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('sw.js')
+                .then((reg) => console.log('✅ Service Worker registado:', reg.scope))
+                .catch((err) => console.warn('⚠️ Service Worker falhou:', err));
+        });
+    }
+
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+                      || window.navigator.standalone === true;
+    if (isStandalone) {
+        document.documentElement.classList.add('pwa-mode');
+        console.log('📱 A correr como PWA instalada.');
+    }
+</script>
+</body>
+</html>
