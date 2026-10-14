@@ -1918,7 +1918,7 @@
         const video = document.getElementById('video');
         container.style.display = 'flex';
         if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-            navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+            navigator.mediaDevices.getUserMedia({ video: { facingMode: exact: "environment" } })
                 .then((streamObj) => { stream = streamObj; video.srcObject = streamObj; video.play(); })
                 .catch((err) => { alert('Câmera indisponível: ' + err.message); container.style.display = 'none'; });
         } else { alert('Navegador não suporta câmera.'); container.style.display = 'none'; }
