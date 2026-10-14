@@ -1912,43 +1912,50 @@
     // =====================================================
     // CÂMARA
     // =====================================================
-    function openCameraForExpense(expId) {
-        targetExpenseIdForCamera = expId;
-        const container = document.getElementById('cameraContainer');
-        const video = document.getElementById('video');
-        container.style.display = 'flex';
-        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-            navigator.mediaDevices.getUserMedia({ video: true })
-                .then((streamObj) => { stream = streamObj; video.srcObject = streamObj; video.play(); })
-                .catch((err) => { alert('Câmera indisponível: ' + err.message); container.style.display = 'none'; });
-        } else { alert('Navegador não suporta câmera.'); container.style.display = 'none'; }
-    }
-
-    function closeCamera() {
-        if (stream) { stream.getTracks().forEach(track => track.stop()); stream = null; }
-        document.getElementById('cameraContainer').style.display = 'none';
-        document.getElementById('video').srcObject = null;
-    }
-
-    async function capturePhoto() {
-        const video = document.getElementById('video');
-        const canvas = document.createElement('canvas');
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        canvas.getContext('2d').drawImage(video, 0, 0);
-        const rawDataUrl = canvas.toDataURL('image/jpeg', 0.9);
-        const dataUrl = await compressImage(rawDataUrl, 1600, 0.75);
-        const exp = expenses.find(e => e.id === targetExpenseIdForCamera);
-        if (exp) {
-            const fileName = `foto_${new Date().toISOString().slice(0,10)}_${Date.now()}.jpg`;
-            const attId = generateAttachmentId();
-            await idbPut(attId, { pages: [dataUrl], name: fileName, type: 'image/jpeg', originalType: null });
-            exp.attachments.push({ id: attId, name: fileName, type: 'image/jpeg', pages: [null] });
-            renderTable();
-            alert('Foto capturada e anexada!');
-        }
-        closeCamera();
-    }
+    // Abrir câmara NATIVA do Android via <input type="file" capture>
+	function openCameraForExpense(expId) {
+	    targetExpenseIdForCamera = expId;
+	
+	    // Criar input invisível que aciona a câmara nativa
+	    const input = document.createElement('input');
+	    input.type = 'file';
+	    input.accept = 'image/*';
+	    input.capture = 'environment'; // 'environment' = câmara traseira, 'user' = frontal
+	
+	    input.onchange = async (e) => {
+	        const file = e.target.files[0];
+	        if (!file) return;
+	
+	        try {
+	            // Ler o ficheiro capturado e comprimir
+	            const dataUrl = await new Promise((resolve) => {
+	                const reader = new FileReader();
+	                reader.onload = (ev) => resolve(ev.target.result);
+	                reader.readAsDataURL(file);
+	            });
+	
+	            const compressed = await compressImage(dataUrl, 1600, 0.75);
+	
+	            // Anexar à despesa alvo
+	            const exp = expenses.find(ex => ex.id === targetExpenseIdForCamera);
+	            if (exp) {
+	                const fileName = `foto_${new Date().toISOString().slice(0,10)}_${Date.now()}.jpg`;
+	                const attId = generateAttachmentId();
+	                await idbPut(attId, { pages: [compressed], name: fileName, type: 'image/jpeg', originalType: null });
+	                exp.attachments.push({ id: attId, name: fileName, type: 'image/jpeg', pages: [null] });
+	                renderTable();
+	                alert('Foto capturada e anexada!');
+	            }
+	        } catch (error) {
+	            console.error('Erro ao processar foto:', error);
+	            alert('Erro ao processar a foto: ' + error.message);
+	        } finally {
+	            targetExpenseIdForCamera = null;
+	        }
+	    };
+	
+	    input.click();
+	}
 
     // =====================================================
     // MAPA
